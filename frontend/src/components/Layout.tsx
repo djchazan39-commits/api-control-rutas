@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useDatos } from '../context/DatosContext';
 
 const menusPorRol: Record<string, { to: string; label: string }[]> = {
@@ -39,16 +39,24 @@ const menusPorRol: Record<string, { to: string; label: string }[]> = {
 export default function Layout() {
   const { usuarioActivo } = useDatos();
   const navigate = useNavigate();
+  const location = useLocation();
   const menu = usuarioActivo ? menusPorRol[usuarioActivo.rol] || [] : [];
+
+  // ¿Estamos en la página principal del dashboard?
+  const esMenuPrincipal = location.pathname === '/dashboard';
 
   function cerrarSesion() {
     localStorage.removeItem('usuarioActivo');
     navigate('/');
   }
 
+  function volverAlMenu() {
+    navigate('/dashboard');
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-950 to-black text-white flex flex-col">
-      {/* Encabezado */}
+    <div className="min-h-screen bg-gradient-to-b from-red-950 to-black text-white">
+      {/* Encabezado SIEMPRE visible */}
       <header className="bg-black/60 border-b border-red-800 p-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <h1 className="text-xl font-bold text-red-200">
@@ -63,43 +71,37 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* Contenido principal */}
-      <div className="max-w-6xl mx-auto p-4 flex flex-col md:flex-row gap-4 flex-1">
-        {/* Menú a la izquierda */}
-        <nav className="w-full md:w-56 space-y-2 flex flex-col">
-          <div className="flex-1 space-y-2">
+      <div className="max-w-6xl mx-auto p-4">
+        {/* ✅ MENU PRINCIPAL — SOLO visible cuando estamos en /dashboard */}
+        {esMenuPrincipal && (
+          <nav className="space-y-3 max-w-md mx-auto">
+            <h2 className="text-xl font-bold text-center text-red-200 mb-4">📋 Menú Principal</h2>
             {menu.map(item => (
               <Link 
                 key={item.to} 
                 to={item.to} 
-                className="block bg-red-900/40 hover:bg-red-800/60 p-3 rounded-lg font-semibold transition"
+                className="block bg-red-900/40 hover:bg-red-800/60 p-4 rounded-lg font-semibold transition text-center text-lg"
               >
                 {item.label}
               </Link>
             ))}
-          </div>
-          
-          {/* Botones en la PARTE DE ABAJO */}
-          <div className="mt-6 pt-4 border-t border-red-800 space-y-2">
+          </nav>
+        )}
+
+        {/* ✅ FORMULARIO — SOLO visible cuando seleccionas una opción */}
+        {!esMenuPrincipal && (
+          <div>
+            <main className="bg-black/40 border border-red-800 rounded-xl p-6 mb-4">
+              <Outlet />
+            </main>
             <button 
-              onClick={() => navigate('/dashboard')} 
+              onClick={volverAlMenu} 
               className="w-full bg-gray-700 hover:bg-gray-600 p-3 rounded-lg font-semibold"
             >
-              🏠 Volver al Inicio
-            </button>
-            <button 
-              onClick={() => { localStorage.clear(); navigate('/'); }} 
-              className="w-full bg-gray-800 hover:bg-gray-700 p-3 rounded-lg text-sm"
-            >
-              🚪 Salir completamente
+              🏠 Volver al Menú Principal
             </button>
           </div>
-        </nav>
-
-        {/* Contenido de cada página */}
-        <main className="flex-1 bg-black/40 border border-red-800 rounded-xl p-6 min-h-[500px]">
-          <Outlet />
-        </main>
+        )}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ export default function Dashboard() {
   const { usuarioActivo } = useDatos();
   const navigate = useNavigate();
 
-  function cerrarSesion() {
+   function cerrarSesion() {
     localStorage.removeItem('usuarioActivo');
     navigate('/');
   }

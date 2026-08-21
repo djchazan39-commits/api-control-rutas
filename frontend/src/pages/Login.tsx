@@ -16,13 +16,10 @@ export default function Login() {
     }
 
     let usuarioActivo: UsuarioActivo | null = null;
-
-    // Buscar en usuarios del sistema
     const u = datosServidor.usuarios.find(x => x.nick === usuario && x.pass === clave);
     if (u) {
       usuarioActivo = { id: u.id, nombre: u.nombre, rol: u.rol, nick: u.nick };
     } else {
-      // Buscar en operadores
       const op = datosServidor.operadores.find(x => x.nick === usuario && x.pass === clave);
       if (op) {
         usuarioActivo = { id: op.id, nombre: op.nombre, rol: 'operador', nick: op.nick };
@@ -47,7 +44,6 @@ export default function Login() {
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
       <div className="bg-red-950/80 border-2 border-red-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
         <h1 className="text-2xl font-bold text-center mb-6 text-red-200">🚛 Control de Rutas</h1>
-        
         <form onSubmit={ingresar} className="space-y-4">
           <div>
             <label className="block mb-1 font-semibold">Usuario</label>
@@ -69,14 +65,12 @@ export default function Login() {
               placeholder="Escribe tu contraseña"
             />
           </div>
-          
           <button
             type="submit"
             className="w-full bg-red-700 hover:bg-red-600 p-3 rounded-lg font-bold transition"
           >
             🔑 Ingresar
           </button>
-          
           <button
             type="button"
             onClick={salirCompleto}
