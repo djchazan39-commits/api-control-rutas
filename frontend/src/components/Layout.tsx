@@ -41,7 +41,12 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const menu = usuarioActivo ? menusPorRol[usuarioActivo.rol] || [] : [];
-  const esMenuPrincipal = location.pathname === "/dashboard" || location.pathname === "/dashboard/";
+
+  // ✅ DETECTA EL MENÚ PRINCIPAL DE TODAS LAS FORMAS POSIBLES
+  const esMenuPrincipal = 
+    location.pathname === "/dashboard" || 
+    location.pathname === "/dashboard/" ||
+    location.pathname.endsWith("/dashboard");
 
   function cerrarSesion() {
     localStorage.clear();
@@ -69,7 +74,7 @@ export default function Layout() {
       <main className="flex-1 max-w-6xl mx-auto p-4 w-full">
         {esMenuPrincipal ? (
           // ✅ MENÚ PRINCIPAL: Mensaje + BOTONES CENTRADOS EN 2 COLUMNAS
-          <div className="flex flex-col justify-center py-8 h-full">
+          <div className="flex flex-col justify-center py-8">
             <div className="text-center mb-8">
               <h2 className="text-xl font-bold text-red-200 mb-2">✅ Bienvenido, {usuarioActivo?.nombre}</h2>
               <p className="text-gray-300">Selecciona una opción para comenzar</p>
