@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UsuarioActivo } from '../types';
 import { cargarDatos } from '../config/api';
@@ -7,6 +7,21 @@ export default function Login() {
   const [usuario, setUsuario] = useState('');
   const [clave, setClave] = useState('');
   const navigate = useNavigate();
+  const usuarioRef = useRef<HTMLInputElement>(null);
+  const claveRef = useRef<HTMLInputElement>(null);
+
+  // ✅ Cursor empieza en el primer campo
+  useEffect(() => {
+    usuarioRef.current?.focus();
+  }, []);
+
+  // ✅ Enter pasa al campo de contraseña
+  function pasarAlSiguiente(e: React.KeyboardEvent<HTMLInputElement>, siguiente?: React.RefObject<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      siguiente?.current?.focus();
+    }
+  }
 
   async function ingresar(e: React.FormEvent) {
     e.preventDefault();
@@ -35,9 +50,11 @@ export default function Login() {
     navigate('/dashboard');
   }
 
+  // ✅ Salir completamente: limpia TODO y vuelve al login
   function salirCompleto() {
     localStorage.clear();
-    alert('✅ Se cerró todo completamente');
+    sessionStorage.clear();
+    window.location.href = '/'; // Fuerza recarga limpia
   }
 
   return (
@@ -45,17 +62,24 @@ export default function Login() {
       <div className="bg-red-950/80 border-2 border-red-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
         
         {/* LOGOTIPO */}
-<div className="text-center mb-6">
-  <img src="/logo.png" alt="Logotipo de la Empresa" className="mx-auto h-24 w-auto object-contain mb-3" />
-  <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
-</div>
+        <div className="text-center mb-6">
+          <img 
+            src="/logo.png" 
+            alt="Logotipo de la Empresa" 
+            className="mx-auto h-24 w-auto object-contain mb-3"
+          />
+          <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
+        </div>
+
         <form onSubmit={ingresar} className="space-y-4">
           <div>
             <label className="block mb-1 font-semibold">Usuario</label>
             <input
+              ref={usuarioRef}
               type="text"
               value={usuario}
               onChange={e => setUsuario(e.target.value)}
+              onKeyDown={(e) => pasarAlSiguiente(e, claveRef)}
               className="w-full p-3 rounded-lg bg-black border border-red-800 focus:border-red-500 outline-none"
               placeholder="Escribe tu usuario"
             />
@@ -63,9 +87,11 @@ export default function Login() {
           <div>
             <label className="block mb-1 font-semibold">Contraseña</label>
             <input
+              ref={claveRef}
               type="password"
               value={clave}
               onChange={e => setClave(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && ingresar(e as any)}
               className="w-full p-3 rounded-lg bg-black border border-red-800 focus:border-red-500 outline-none"
               placeholder="Escribe tu contraseña"
             />
