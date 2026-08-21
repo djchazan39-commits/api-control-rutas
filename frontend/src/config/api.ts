@@ -1,5 +1,4 @@
-const API = import.meta.env.VITE_API_URL || 'http://localhost:10000/api';
-
+const API = 'http://localhost:10000/api';
 export async function cargarDatos() {
   try {
     const resp = await fetch(API + '/datos');
