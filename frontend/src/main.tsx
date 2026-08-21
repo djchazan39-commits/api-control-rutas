@@ -28,10 +28,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <DatosProvider>
       <BrowserRouter>
         <Routes>
-          {/* Pantalla de Login */}
           <Route path="/" element={<Login />} />
-          
-          {/* Rutas protegidas con Layout */}
           <Route path="/dashboard" element={
             <RutaProtegida>
               <Layout />
@@ -49,8 +46,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="respaldo" element={<RespaldoPage />} />
             <Route path="combustible" element={<CombustiblePage />} />
           </Route>
-          
-          {/* Cualquier otra dirección va al Login */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

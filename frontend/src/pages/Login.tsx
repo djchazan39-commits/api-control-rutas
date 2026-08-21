@@ -43,7 +43,12 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
       <div className="bg-red-950/80 border-2 border-red-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-        <h1 className="text-2xl font-bold text-center mb-6 text-red-200">🚛 Control de Rutas</h1>
+        {/* LOGOTIPO ARRIBA CENTRADO */}
+        <div className="text-center mb-6">
+          <img src="/LOGOEMPRESA.png" alt="Logotipo de la Empresa" className="mx-auto h-24 w-auto object-contain mb-3" />
+          <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
+        </div>
+
         <form onSubmit={ingresar} className="space-y-4">
           <div>
             <label className="block mb-1 font-semibold">Usuario</label>

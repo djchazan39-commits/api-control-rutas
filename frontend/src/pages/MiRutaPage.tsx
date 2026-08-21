@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useDatos } from "../context/DatosContext";
 import { useNavigate } from 'react-router-dom';
 
@@ -12,14 +12,24 @@ export default function MiRutaPage() {
     navigate('/');
   }
 
-  function volverAlMenu() {
+  function volverAlMenuPrincipal() {
     navigate('/dashboard');
+  }
+
+  function volverAlMenuOperador() {
+    setVista('menu');
   }
 
   // 🏠 MENÚ DEL OPERADOR
   if (vista === 'menu') {
     return (
       <div>
+        {/* LOGOTIPO */}
+        <div className="text-center mb-6 pb-4 border-b border-red-800">
+          <img src="/LOGOEMPRESA.png" alt="Logotipo de la Empresa" className="mx-auto h-16 w-auto object-contain mb-1" />
+          <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
+        </div>
+
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-red-200">🚛 Menú del Operador</h2>
           <button onClick={cerrarSesion} className="bg-red-700 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold">
@@ -48,7 +58,7 @@ export default function MiRutaPage() {
         </div>
 
         <div className="mt-8 text-center">
-          <button onClick={volverAlMenu} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg">
+          <button onClick={volverAlMenuPrincipal} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg">
             🏠 Volver al Menú Principal
           </button>
         </div>
@@ -60,6 +70,12 @@ export default function MiRutaPage() {
   if (vista === 'ruta') {
     return (
       <div>
+        {/* LOGOTIPO */}
+        <div className="text-center mb-6 pb-4 border-b border-red-800">
+          <img src="/LOGOEMPRESA.png" alt="Logotipo de la Empresa" className="mx-auto h-16 w-auto object-contain mb-1" />
+          <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
+        </div>
+
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-red-200">📍 Mi Ruta</h2>
           <button onClick={cerrarSesion} className="bg-red-700 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold">
@@ -72,7 +88,7 @@ export default function MiRutaPage() {
           <p className="text-sm text-gray-300 mt-1">Pronto podrás ver el mapa y reportar entregas</p>
         </div>
 
-        <button onClick={() => setVista('menu')} className="w-full bg-gray-700 hover:bg-gray-600 p-3 rounded-lg font-semibold">
+        <button onClick={volverAlMenuOperador} className="w-full bg-gray-700 hover:bg-gray-600 p-3 rounded-lg font-semibold">
           🏠 Volver al Menú del Operador
         </button>
       </div>
@@ -82,6 +98,12 @@ export default function MiRutaPage() {
   // ⛽ PANTALLA DE COMBUSTIBLE
   return (
     <div>
+      {/* LOGOTIPO */}
+      <div className="text-center mb-6 pb-4 border-b border-red-800">
+        <img src="/LOGOEMPRESA.png" alt="Logotipo de la Empresa" className="mx-auto h-16 w-auto object-contain mb-1" />
+        <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
+      </div>
+
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-red-200">⛽ Registro de Combustible</h2>
         <button onClick={cerrarSesion} className="bg-red-700 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold">
@@ -94,7 +116,7 @@ export default function MiRutaPage() {
         <p className="text-sm text-gray-300 mt-1">Formulario próximamente disponible</p>
       </div>
 
-      <button onClick={() => setVista('menu')} className="w-full bg-gray-700 hover:bg-gray-600 p-3 rounded-lg font-semibold">
+      <button onClick={volverAlMenuOperador} className="w-full bg-gray-700 hover:bg-gray-600 p-3 rounded-lg font-semibold">
         🏠 Volver al Menú del Operador
       </button>
     </div>

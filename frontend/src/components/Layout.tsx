@@ -41,8 +41,6 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const menu = usuarioActivo ? menusPorRol[usuarioActivo.rol] || [] : [];
-
-  // ¿Estamos en la página principal del dashboard?
   const esMenuPrincipal = location.pathname === '/dashboard';
 
   function cerrarSesion() {
@@ -56,12 +54,16 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-950 to-black text-white">
-      {/* Encabezado SIEMPRE visible */}
+      {/* LOGOTIPO ARRIBA CENTRADO EN TODA LA APLICACIÓN */}
+      <div className="text-center py-4 border-b border-red-800 bg-black/40">
+        <img src="/LOGOEMPRESA.png" alt="Logotipo de la Empresa" className="mx-auto h-20 w-auto object-contain mb-1" />
+        <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
+      </div>
+
+      {/* Barra con usuario y botón cerrar sesión */}
       <header className="bg-black/60 border-b border-red-800 p-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold text-red-200">
-            🚛 Control de Rutas — {usuarioActivo?.nombre} ({usuarioActivo?.rol})
-          </h1>
+          <p className="font-semibold">{usuarioActivo?.nombre} — {usuarioActivo?.rol}</p>
           <button 
             onClick={cerrarSesion} 
             className="bg-red-700 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold"
@@ -72,9 +74,9 @@ export default function Layout() {
       </header>
 
       <div className="max-w-6xl mx-auto p-4">
-        {/* ✅ MENU PRINCIPAL — SOLO visible cuando estamos en /dashboard */}
+        {/* MENÚ PRINCIPAL — SOLO visible en /dashboard */}
         {esMenuPrincipal && (
-          <nav className="space-y-3 max-w-md mx-auto">
+          <nav className="space-y-3 max-w-md mx-auto mt-6">
             <h2 className="text-xl font-bold text-center text-red-200 mb-4">📋 Menú Principal</h2>
             {menu.map(item => (
               <Link 
@@ -88,9 +90,9 @@ export default function Layout() {
           </nav>
         )}
 
-        {/* ✅ FORMULARIO — SOLO visible cuando seleccionas una opción */}
+        {/* FORMULARIO — SOLO visible al elegir una opción */}
         {!esMenuPrincipal && (
-          <div>
+          <div className="mt-4">
             <main className="bg-black/40 border border-red-800 rounded-xl p-6 mb-4">
               <Outlet />
             </main>
