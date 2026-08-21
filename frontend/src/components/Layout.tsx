@@ -28,7 +28,6 @@ const menusPorRol: Record<string, { to: string; label: string }[]> = {
     { to: "/dashboard/clientes", label: "🏢 Clientes" },
     { to: "/dashboard/rutas", label: "📍 Rutas" },
     { to: "/dashboard/seguimiento", label: "👀 Seguimiento" },
-    { to: "/dashboard/reportes", label: "📊 Reportes" }
   ],
   operador: [
     { to: "/dashboard/mi-ruta", label: "🚛 Mi Ruta" },
