@@ -24,11 +24,11 @@ export default function MiRutaPage() {
   if (vista === 'menu') {
     return (
       <div>
-        {/* LOGOTIPO */}
-        <div className="text-center mb-6 pb-4 border-b border-red-800">
-          <img src="/LOGOEMPRESA.png" alt="Logotipo de la Empresa" className="mx-auto h-16 w-auto object-contain mb-1" />
-          <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
-        </div>
+  {/* LOGOTIPO */}
+       <div className="text-center mb-6">
+        <img src="/logo.png" alt="Logotipo de la Empresa" className="mx-auto h-24 w-auto object-contain mb-3" />
+        <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
+       </div>
 
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-red-200">🚛 Menú del Operador</h2>

@@ -56,7 +56,7 @@ export default function Layout() {
     <div className="min-h-screen bg-gradient-to-b from-red-950 to-black text-white">
       {/* LOGOTIPO ARRIBA CENTRADO EN TODA LA APLICACIÓN */}
       <div className="text-center py-4 border-b border-red-800 bg-black/40">
-        <img src="/LOGOEMPRESA.png" alt="Logotipo de la Empresa" className="mx-auto h-20 w-auto object-contain mb-1" />
+       <img src="/logo.png" alt="Logotipo" className="mx-auto h-24 w-auto object-contain mb-3" />
         <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
       </div>
 
