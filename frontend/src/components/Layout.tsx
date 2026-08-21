@@ -37,7 +37,7 @@ const menusPorRol: Record<string, { to: string; label: string }[]> = {
 };
 
 export default function Layout() {
-  const { usuarioActivo, setDatos } = useDatos();
+  const { usuarioActivo } = useDatos();
   const navigate = useNavigate();
   const menu = usuarioActivo ? menusPorRol[usuarioActivo.rol] || [] : [];
 
@@ -47,25 +47,57 @@ export default function Layout() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-950 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-b from-red-950 to-black text-white flex flex-col">
+      {/* Encabezado */}
       <header className="bg-black/60 border-b border-red-800 p-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold text-red-200">🚛 Control de Rutas — {usuarioActivo?.nombre} ({usuarioActivo?.rol})</h1>
-          <button onClick={cerrarSesion} className="bg-red-700 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold">🚪 Cerrar Sesión</button>
+          <h1 className="text-xl font-bold text-red-200">
+            🚛 Control de Rutas — {usuarioActivo?.nombre} ({usuarioActivo?.rol})
+          </h1>
+          <button 
+            onClick={cerrarSesion} 
+            className="bg-red-700 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold"
+          >
+            🚪 Cerrar Sesión
+          </button>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto p-4 flex flex-col md:flex-row gap-4">
-        <nav className="w-full md:w-56 space-y-2">
-          {menu.map(item => (
-            <Link key={item.to} to={item.to} className="block bg-red-900/40 hover:bg-red-800/60 p-3 rounded-lg font-semibold transition">
-              {item.label}
-            </Link>
-          ))}
-          <button onClick={() => navigate('/dashboard')} className="w-full mt-4 bg-gray-700 hover:bg-gray-600 p-2 rounded-lg">← Volver al Inicio</button>
+      {/* Contenido principal */}
+      <div className="max-w-6xl mx-auto p-4 flex flex-col md:flex-row gap-4 flex-1">
+        {/* Menú a la izquierda */}
+        <nav className="w-full md:w-56 space-y-2 flex flex-col">
+          <div className="flex-1 space-y-2">
+            {menu.map(item => (
+              <Link 
+                key={item.to} 
+                to={item.to} 
+                className="block bg-red-900/40 hover:bg-red-800/60 p-3 rounded-lg font-semibold transition"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+          
+          {/* Botones en la PARTE DE ABAJO */}
+          <div className="mt-6 pt-4 border-t border-red-800 space-y-2">
+            <button 
+              onClick={() => navigate('/dashboard')} 
+              className="w-full bg-gray-700 hover:bg-gray-600 p-3 rounded-lg font-semibold"
+            >
+              🏠 Volver al Inicio
+            </button>
+            <button 
+              onClick={() => { localStorage.clear(); navigate('/'); }} 
+              className="w-full bg-gray-800 hover:bg-gray-700 p-3 rounded-lg text-sm"
+            >
+              🚪 Salir completamente
+            </button>
+          </div>
         </nav>
 
-        <main className="flex-1 bg-black/40 border border-red-800 rounded-xl p-6">
+        {/* Contenido de cada página */}
+        <main className="flex-1 bg-black/40 border border-red-800 rounded-xl p-6 min-h-[500px]">
           <Outlet />
         </main>
       </div>

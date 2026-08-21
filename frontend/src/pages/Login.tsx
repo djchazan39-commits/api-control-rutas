@@ -38,10 +38,16 @@ export default function Login() {
     navigate('/dashboard');
   }
 
+  function salirCompleto() {
+    localStorage.clear();
+    alert('✅ Se cerró todo completamente');
+  }
+
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-      <div className="bg-red-950 border-2 border-red-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+      <div className="bg-red-950/80 border-2 border-red-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
         <h1 className="text-2xl font-bold text-center mb-6 text-red-200">🚛 Control de Rutas</h1>
+        
         <form onSubmit={ingresar} className="space-y-4">
           <div>
             <label className="block mb-1 font-semibold">Usuario</label>
@@ -50,6 +56,7 @@ export default function Login() {
               value={usuario}
               onChange={e => setUsuario(e.target.value)}
               className="w-full p-3 rounded-lg bg-black border border-red-800 focus:border-red-500 outline-none"
+              placeholder="Escribe tu usuario"
             />
           </div>
           <div>
@@ -59,13 +66,23 @@ export default function Login() {
               value={clave}
               onChange={e => setClave(e.target.value)}
               className="w-full p-3 rounded-lg bg-black border border-red-800 focus:border-red-500 outline-none"
+              placeholder="Escribe tu contraseña"
             />
           </div>
+          
           <button
             type="submit"
             className="w-full bg-red-700 hover:bg-red-600 p-3 rounded-lg font-bold transition"
           >
             🔑 Ingresar
+          </button>
+          
+          <button
+            type="button"
+            onClick={salirCompleto}
+            className="w-full bg-gray-700 hover:bg-gray-600 p-3 rounded-lg font-semibold transition mt-2"
+          >
+            🚪 Salir completamente
           </button>
         </form>
       </div>
