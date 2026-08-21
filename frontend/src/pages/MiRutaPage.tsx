@@ -72,7 +72,7 @@ export default function MiRutaPage() {
       <div>
         {/* LOGOTIPO */}
         <div className="text-center mb-6 pb-4 border-b border-red-800">
-          <img src="/LOGOEMPRESA.png" alt="Logotipo de la Empresa" className="mx-auto h-16 w-auto object-contain mb-1" />
+          <img src="/logo.png" alt="Logotipo de la Empresa" className="mx-auto h-16 w-auto object-contain mb-1" />
           <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
         </div>
 
@@ -100,7 +100,7 @@ export default function MiRutaPage() {
     <div>
       {/* LOGOTIPO */}
       <div className="text-center mb-6 pb-4 border-b border-red-800">
-        <img src="/LOGOEMPRESA.png" alt="Logotipo de la Empresa" className="mx-auto h-16 w-auto object-contain mb-1" />
+        <img src="/logo.png" alt="Logotipo de la Empresa" className="mx-auto h-16 w-auto object-contain mb-1" />
         <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
       </div>
 
