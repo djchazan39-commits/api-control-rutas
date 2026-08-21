@@ -2,10 +2,9 @@
   "name": "control-rutas-backend",
   "version": "1.0.0",
   "description": "Backend para sistema de control de rutas",
-  "main": "src/server.ts",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "start": "tsx src/server.ts"
+    "start": "npx tsx src/server.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
