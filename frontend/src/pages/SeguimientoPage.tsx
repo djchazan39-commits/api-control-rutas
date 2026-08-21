@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useDatos } from '../context/DatosContext';
+import ... from "../context/DatosContext"
+import ... from "../types"
 import L from 'leaflet';
 
 export default function SeguimientoPage() {

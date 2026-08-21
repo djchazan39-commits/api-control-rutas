@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useDatos } from '../context/DatosContext';
+import ... from "../context/DatosContext"
+import ... from "../types"
 
 export default function ReportesPage() {
   const { datos } = useDatos();

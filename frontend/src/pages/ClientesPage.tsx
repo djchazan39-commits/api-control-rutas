@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useDatos } from '../../context/DatosContext';
-import { Cliente } from '../../types';
+import { useDatos } from '../context/DatosContext';
+import { Cliente } from '../types';
 
 export default function ClientesPage() {
   const { datos, guardarCambios, setDatos } = useDatos();

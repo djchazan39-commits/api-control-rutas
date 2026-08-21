@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useDatos } from '../../context/DatosContext';
-import { Unidad } from '../../types';
+import { useDatos } from '../context/DatosContext';
+import { Unidad } from '../types';
 
 export default function UnidadesPage() {
   const { datos, guardarCambios, setDatos } = useDatos();

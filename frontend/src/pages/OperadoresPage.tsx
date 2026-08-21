@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useDatos } from '../../context/DatosContext';
-import { Operador } from '../../types';
+import { useDatos } from '../context/DatosContext';
+import { Operador } from '../types';
 
 export default function OperadoresPage() {
   const { datos, setDatos, guardarCambios } = useDatos();

@@ -1,4 +1,5 @@
-import { useDatos } from '../context/DatosContext';
+import ... from "../context/DatosContext"
+import ... from "../types";
 
 export default function RespaldoPage() {
   const { datos } = useDatos();
