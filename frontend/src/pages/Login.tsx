@@ -10,12 +10,12 @@ export default function Login() {
   const usuarioRef = useRef<HTMLInputElement>(null);
   const claveRef = useRef<HTMLInputElement>(null);
 
-  // ✅ Cursor empieza en el primer campo
+  // ✅ Cursor empieza automáticamente en el primer campo
   useEffect(() => {
     usuarioRef.current?.focus();
   }, []);
 
-  // ✅ Enter pasa al campo de contraseña
+  // ✅ Enter pasa al siguiente campo
   function pasarAlSiguiente(e: React.KeyboardEvent<HTMLInputElement>, siguiente?: React.RefObject<HTMLInputElement>) {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -23,6 +23,7 @@ export default function Login() {
     }
   }
 
+  // ✅ Función para ingresar
   async function ingresar(e: React.FormEvent) {
     e.preventDefault();
     const datosServidor = await cargarDatos();
@@ -50,13 +51,6 @@ export default function Login() {
     navigate('/dashboard');
   }
 
-  // ✅ Salir completamente: limpia TODO y vuelve al login
-  function salirCompleto() {
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = '/'; // Fuerza recarga limpia
-  }
-
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
       <div className="bg-red-950/80 border-2 border-red-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
@@ -71,6 +65,7 @@ export default function Login() {
           <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
         </div>
 
+        {/* ✅ SOLO USUARIO, CONTRASEÑA E INGRESAR — SIN BOTÓN DE SALIR */}
         <form onSubmit={ingresar} className="space-y-4">
           <div>
             <label className="block mb-1 font-semibold">Usuario</label>
@@ -101,13 +96,6 @@ export default function Login() {
             className="w-full bg-red-700 hover:bg-red-600 p-3 rounded-lg font-bold transition"
           >
             🔑 Ingresar
-          </button>
-          <button
-            type="button"
-            onClick={salirCompleto}
-            className="w-full bg-gray-700 hover:bg-gray-600 p-3 rounded-lg font-semibold transition mt-2"
-          >
-            🚪 Salir completamente
           </button>
         </form>
       </div>
