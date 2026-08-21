@@ -41,8 +41,6 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const menu = usuarioActivo ? menusPorRol[usuarioActivo.rol] || [] : [];
-
-  // ✅ Detecta el menú principal de todas las formas posibles
   const esMenuPrincipal = location.pathname === "/dashboard" || location.pathname === "/dashboard/";
 
   function cerrarSesion() {
@@ -70,13 +68,28 @@ export default function Layout() {
       {/* CONTENIDO PRINCIPAL */}
       <main className="flex-1 max-w-6xl mx-auto p-4 w-full">
         {esMenuPrincipal ? (
-          // ✅ MENÚ PRINCIPAL: Mensaje + botones abajo
-          <div className="text-center py-4">
-            <h2 className="text-xl font-bold text-red-200 mb-2">✅ Bienvenido, {usuarioActivo?.nombre}</h2>
-            <p className="text-gray-300">Selecciona una opción del menú de abajo</p>
+          // ✅ MENÚ PRINCIPAL: Mensaje + BOTONES CENTRADOS EN 2 COLUMNAS
+          <div className="flex flex-col justify-center py-8 h-full">
+            <div className="text-center mb-8">
+              <h2 className="text-xl font-bold text-red-200 mb-2">✅ Bienvenido, {usuarioActivo?.nombre}</h2>
+              <p className="text-gray-300">Selecciona una opción para comenzar</p>
+            </div>
+
+            {/* ✅ BOTONES DEL MENÚ — CENTRADOS EN 2 COLUMNAS */}
+            <nav className="grid grid-cols-2 gap-4 max-w-xl mx-auto w-full">
+              {menu.map(item => (
+                <Link 
+                  key={item.to} 
+                  to={item.to} 
+                  className="bg-red-900/40 hover:bg-red-800/60 p-4 rounded-lg font-semibold transition text-center border border-red-800"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
           </div>
         ) : (
-          // ✅ FORMULARIO: Solo formulario + botón volver
+          // ✅ FORMULARIO: Solo formulario + botón Volver
           <div>
             <div className="bg-black/40 border border-red-800 rounded-xl p-5 mb-4">
               <Outlet />
@@ -91,26 +104,12 @@ export default function Layout() {
         )}
       </main>
 
-      {/* 🔽 BOTONES DEL MENÚ + CERRAR SESIÓN — ABAJO DEL TODO 🔽 */}
+      {/* 🔽 SOLO CERRAR SESIÓN — ABAJO DEL TODO 🔽 */}
       {esMenuPrincipal && (
         <footer className="border-t border-red-800 bg-black/50 p-4">
-          <h3 className="text-lg font-bold text-center text-red-200 mb-3">📋 Menú Principal</h3>
-          
-          <nav className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-w-5xl mx-auto mb-4">
-            {menu.map(item => (
-              <Link 
-                key={item.to} 
-                to={item.to} 
-                className="bg-red-900/40 hover:bg-red-800/60 p-3 rounded-lg font-semibold transition text-center border border-red-800"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
           <button 
             onClick={cerrarSesion} 
-            className="w-full bg-red-700 hover:bg-red-600 p-3 rounded-lg font-semibold"
+            className="w-full max-w-xl mx-auto block bg-red-700 hover:bg-red-600 p-3 rounded-lg font-semibold"
           >
             🚪 Cerrar Sesión
           </button>
