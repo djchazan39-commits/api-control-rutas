@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useDatos } from '../context/DatosContext';
-import { Usuario } from '../types';
+import { useState } from 'react';
+import { useDatos } from "../context/DatosContext";
+import { Usuario } from "../types";
 
 export default function UsuariosPage() {
   const { datos, setDatos, guardarCambios } = useDatos();
@@ -14,7 +14,7 @@ export default function UsuariosPage() {
     if (editId) {
       setDatos(prev => ({
         ...prev,
-        usuarios: prev.usuarios.map(u => u.id === editId ? { ...u, ...form } as Usuario : u)
+        usuarios: prev.usuarios.map((u: Usuario) => u.id === editId ? { ...u, ...form } as Usuario : u)
       }));
     } else {
       const nuevo: Usuario = { ...form, id: Date.now() } as Usuario;
@@ -31,8 +31,10 @@ export default function UsuariosPage() {
   }
 
   async function eliminar(id: number) {
+    const usuario = datos.usuarios.find(u => u.id === id);
+    if (usuario?.nick === 'admin') return alert('❌ No se puede eliminar al administrador');
     if (!confirm('¿Eliminar?')) return;
-    setDatos(prev => ({ ...prev, usuarios: prev.usuarios.filter(u => u.id !== id) }));
+    setDatos(prev => ({ ...prev, usuarios: prev.usuarios.filter((u: Usuario) => u.id !== id) }));
     await guardarCambios();
   }
 
@@ -42,7 +44,7 @@ export default function UsuariosPage() {
       <form onSubmit={guardar} className="space-y-3 mb-6">
         <input placeholder="Nombre completo" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })}
           className="w-full p-3 rounded-lg bg-black border border-red-800" />
-        <select value={form.rol} onChange={e => setForm({ ...form, rol: e.target.value as any })}
+        <select value={form.rol} onChange={e => setForm({ ...form, rol: e.target.value as Usuario['rol'] })}
           className="w-full p-3 rounded-lg bg-black border border-red-800">
           <option value="administrador">Administrador</option>
           <option value="director">Director</option>
@@ -62,7 +64,7 @@ export default function UsuariosPage() {
             <tr><th className="p-2 text-left">Nombre</th><th>Usuario</th><th>Rol</th><th>Acciones</th></tr>
           </thead>
           <tbody>
-            {datos.usuarios.map(u => (
+            {datos.usuarios.map((u: Usuario) => (
               <tr key={u.id} className="border-t border-red-900/30">
                 <td className="p-2">{u.nombre}</td>
                 <td>{u.nick}</td>

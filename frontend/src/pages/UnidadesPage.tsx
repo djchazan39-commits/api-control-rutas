@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { useDatos } from '../context/DatosContext';
-import { Unidad } from '../types';
+import { useDatos } from "../context/DatosContext";
+import { Unidad } from "../types";
+
 
 export default function UnidadesPage() {
   const { datos, guardarCambios, setDatos } = useDatos();
   const [form, setForm] = useState<Partial<Unidad>>({ placa: '', modelo: '' });
   const [editId, setEditId] = useState<number | null>(null);
 
+
   async function guardar(e: React.FormEvent) {
     e.preventDefault();
     if (!form.placa || !form.modelo) return alert('Completa todos los campos');
     if (editId) {
-      setDatos(prev => ({ ...prev, unidades: prev.unidades.map(u => u.id === editId ? { ...u, ...form } as Unidad : u) }));
+      setDatos(prev => ({ ...prev, unidades: prev.unidades.map((u: Unidad) => u.id === editId ? { ...u, ...form } as Unidad : u) }));
     } else {
       setDatos(prev => ({ ...prev, unidades: [...prev.unidades, { ...form, id: Date.now() } as Unidad] }));
     }
@@ -20,12 +22,14 @@ export default function UnidadesPage() {
     setEditId(null);
   }
 
+
   function editar(u: Unidad) { setForm(u); setEditId(u.id); }
   async function eliminar(id: number) {
     if (!confirm('¿Eliminar?')) return;
-    setDatos(prev => ({ ...prev, unidades: prev.unidades.filter(u => u.id !== id) }));
+    setDatos(prev => ({ ...prev, unidades: prev.unidades.filter((u: Unidad) => u.id !== id) }));
     await guardarCambios();
   }
+
 
   return (
     <div>
@@ -38,7 +42,7 @@ export default function UnidadesPage() {
       <table className="w-full text-sm">
         <thead className="bg-red-900/40"><tr><th className="p-2 text-left">Placa</th><th>Modelo</th><th>Acciones</th></tr></thead>
         <tbody>
-          {datos.unidades.map(u => (
+          {datos.unidades.map((u: Unidad) => (
             <tr key={u.id} className="border-t border-red-900/30">
               <td className="p-2">{u.placa}</td><td>{u.modelo}</td>
               <td><button onClick={() => editar(u)} className="text-blue-400 mr-2">✏️</button><button onClick={() => eliminar(u.id)} className="text-red-400">🗑️</button></td>

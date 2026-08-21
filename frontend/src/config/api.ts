@@ -1,33 +1,32 @@
-import { DatosApp } from '../types';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:10000/api';
 
-// Usar variable de entorno o por defecto localhost
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
-// Cargar datos desde el servidor
-export async function cargarDatos(): Promise<DatosApp | null> {
+export async function cargarDatos() {
   try {
-    const res = await fetch(`${API_URL}/datos`, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) throw new Error('Error al cargar');
-    return await res.json();
-  } catch (err) {
-    console.warn('⚠️ No se pudo conectar al servidor');
-    return null;
+    const resp = await fetch(API + '/datos');
+    if (resp.ok) {
+      return await resp.json();
+    }
+  } catch {
+    console.log('Servidor no disponible');
   }
+
+  const guardados = localStorage.getItem('datosApp');
+  if (guardados) {
+    return JSON.parse(guardados);
+  }
+
+  return {
+    usuarios: [
+      { id: 1, nombre: 'Administrador', rol: 'administrador', nick: 'admin', pass: 'admin1530' }
+    ],
+    operadores: [],
+    unidades: [],
+    clientes: [],
+    rutas: [],
+    entregas: [],
+    combustible: [],
+    ubicaciones: []
+  };
 }
 
-// Guardar datos en el servidor
-export async function guardarDatos(datos: DatosApp): Promise<boolean> {
-  try {
-    datos.actualizado = new Date().toISOString();
-    const res = await fetch(`${API_URL}/datos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(datos),
-      signal: AbortSignal.timeout(8000)
-    });
-    return res.ok;
-  } catch (err) {
-    console.warn('⚠️ No se pudo sincronizar con el servidor');
-    return false;
-  }
-}
+export { API };

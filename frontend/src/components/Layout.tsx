@@ -37,9 +37,14 @@ const menusPorRol: Record<string, { to: string; label: string }[]> = {
 };
 
 export default function Layout() {
-  const { usuarioActivo, cerrarSesion } = useDatos();
+  const { usuarioActivo, setDatos } = useDatos();
   const navigate = useNavigate();
   const menu = usuarioActivo ? menusPorRol[usuarioActivo.rol] || [] : [];
+
+  function cerrarSesion() {
+    localStorage.removeItem('usuarioActivo');
+    navigate('/');
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-950 to-black text-white">

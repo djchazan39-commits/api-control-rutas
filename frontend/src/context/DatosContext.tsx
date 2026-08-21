@@ -1,60 +1,74 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { DatosApp, UsuarioActivo } from '../types';
-import { cargarDatos, guardarDatos as guardarDatosApi } from '../config/api';
 
-interface DatosContextType {
+interface ContextoDatos {
   datos: DatosApp;
   setDatos: React.Dispatch<React.SetStateAction<DatosApp>>;
   usuarioActivo: UsuarioActivo | null;
-  cargarSistema: () => Promise<void>;
   guardarCambios: () => Promise<void>;
-  cerrarSesion: () => void;
 }
 
-const DatosContext = createContext<DatosContextType | undefined>(undefined);
+const DatosContext = createContext<ContextoDatos | undefined>(undefined);
 
-const inicialDatos: DatosApp = {
-  usuarios: [{ id: 1, nombre: 'Administrador', rol: 'administrador', nick: 'admin', pass: '123456' }],
-  operadores: [], unidades: [], clientes: [], rutas: [], entregas: [], combustible: [], ubicaciones: []
+// USUARIO ADMINISTRADOR POR DEFECTO — NUNCA SE BORRA ⬇️
+const datosIniciales: DatosApp = {
+  usuarios: [
+    {
+      id: 1,
+      nombre: 'Administrador',
+      rol: 'administrador',
+      nick: 'admin',
+      pass: 'admin1530'
+    }
+  ],
+  operadores: [],
+  unidades: [],
+  clientes: [],
+  rutas: [],
+  entregas: [],
+  combustible: [],
+  ubicaciones: [],
+  actualizado: new Date().toISOString()
 };
 
 export function DatosProvider({ children }: { children: ReactNode }) {
-  const [datos, setDatos] = useState<DatosApp>(inicialDatos);
+  const [datos, setDatos] = useState<DatosApp>(datosIniciales);
   const [usuarioActivo, setUsuarioActivo] = useState<UsuarioActivo | null>(null);
 
   useEffect(() => {
-    const guardado = localStorage.getItem('usuarioActivo');
-    if (guardado) {
-      setUsuarioActivo(JSON.parse(guardado));
-      const local = localStorage.getItem('datosApp');
-      if (local) setDatos(JSON.parse(local));
-      cargarSistema();
+    const sesion = localStorage.getItem('usuarioActivo');
+    const guardados = localStorage.getItem('datosApp');
+    if (sesion) setUsuarioActivo(JSON.parse(sesion));
+    if (guardados) {
+      const parsed: DatosApp = JSON.parse(guardados);
+      // ASEGURAR QUE EL ADMIN SIEMPRE EXISTA AL CARGAR ⬇️
+      const existeAdmin = parsed.usuarios.some(u => u.nick === 'admin');
+      if (!existeAdmin) {
+        parsed.usuarios.unshift({ id: 1, nombre: 'Administrador', rol: 'administrador', nick: 'admin', pass: 'admin1530' });
+      }
+      setDatos(parsed);
     }
   }, []);
 
-  async function cargarSistema() {
-    const desdeServidor = await cargarDatos();
-    if (desdeServidor) {
-      setDatos(desdeServidor);
-      localStorage.setItem('datosApp', JSON.stringify(desdeServidor));
-    }
-  }
-
-  async function guardarCambios() {
-    const ok = await guardarDatosApi(datos);
-    localStorage.setItem('datosApp', JSON.stringify(datos));
-    return ok;
-  }
-
-  function cerrarSesion() {
-    localStorage.removeItem('usuarioActivo');
-    localStorage.removeItem('datosApp');
-    setUsuarioActivo(null);
-    window.location.href = '/login';
-  }
+  const guardarCambios = async (): Promise<void> => {
+    setDatos(prev => {
+      const actualizado: DatosApp = {
+        ...prev,
+        actualizado: new Date().toISOString()
+      };
+      // PROTEGER EL USUARIO ADMIN SIEMPRE ⬇️
+      const sinAdmin = actualizado.usuarios.filter(u => u.nick !== 'admin');
+      actualizado.usuarios = [
+        { id: 1, nombre: 'Administrador', rol: 'administrador', nick: 'admin', pass: 'admin1530' },
+        ...sinAdmin
+      ];
+      localStorage.setItem('datosApp', JSON.stringify(actualizado));
+      return actualizado;
+    });
+  };
 
   return (
-    <DatosContext.Provider value={{ datos, setDatos, usuarioActivo, cargarSistema, guardarCambios, cerrarSesion }}>
+    <DatosContext.Provider value={{ datos, setDatos, usuarioActivo, guardarCambios }}>
       {children}
     </DatosContext.Provider>
   );
@@ -62,6 +76,6 @@ export function DatosProvider({ children }: { children: ReactNode }) {
 
 export function useDatos() {
   const ctx = useContext(DatosContext);
-  if (!ctx) throw new Error('useDatos debe usarse dentro de DatosProvider');
+  if (!ctx) throw new Error('Falta DatosProvider');
   return ctx;
 }

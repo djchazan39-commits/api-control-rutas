@@ -12,6 +12,8 @@ export interface Operador {
   licencia?: string;
   vencimiento?: string;
   telefono?: string;
+  nick: string;
+  pass: string;
 }
 
 export interface Unidad {

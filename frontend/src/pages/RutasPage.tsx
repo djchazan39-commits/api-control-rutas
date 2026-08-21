@@ -1,169 +1,168 @@
-import { useState, useEffect } from 'react';
-import { useDatos } from '../context/DatosContext';
-import { Ruta } from '../types';
-import L from 'leaflet';
+import { useState } from 'react';
+import { useDatos } from "../context/DatosContext";
+import { Ruta, Operador, Unidad, Cliente } from "../types";
 
 export default function RutasPage() {
   const { datos, setDatos, guardarCambios } = useDatos();
-  const [idOperador, setIdOperador] = useState<number | ''>('');
-  const [idUnidad, setIdUnidad] = useState<number | ''>('');
-  const [nombreRuta, setNombreRuta] = useState('');
-  const [clientesSeleccionados, setClientesSeleccionados] = useState<number[]>([]);
-  const [ordenClientes, setOrdenClientes] = useState<number[]>([]);
-  const [mapa, setMapa] = useState<L.Map | null>(null);
+  const [form, setForm] = useState<Partial<Ruta>>({ nombre: '', idOperador: 0, idUnidad: 0, ordenClientes: [] as number[] });
   const [editId, setEditId] = useState<number | null>(null);
+  const [clientesSeleccionados, setClientesSeleccionados] = useState<number[]>([]);
 
-  useEffect(() => {
-    if (!mapa) {
-      const m = L.map('mapaRutas').setView([20.6297, -100.4022], 10);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
-      setMapa(m);
-    }
-    return () => { if (mapa) mapa.remove() };
-  }, []);
-
-  const toggleCliente = (idCli: number) => {
-    if (clientesSeleccionados.includes(idCli)) {
-      const nuevos = clientesSeleccionados.filter(id => id !== idCli);
-      setClientesSeleccionados(nuevos);
-      setOrdenClientes(prev => prev.filter(id => id !== idCli));
+  function seleccionarCliente(idCliente: number) {
+    if (clientesSeleccionados.includes(idCliente)) {
+      setClientesSeleccionados(clientesSeleccionados.filter(id => id !== idCliente));
     } else {
-      setClientesSeleccionados([...clientesSeleccionados, idCli]);
-      setOrdenClientes([...ordenClientes, idCli]);
+      setClientesSeleccionados([...clientesSeleccionados, idCliente]);
     }
-  };
-
-  const dibujarRuta = () => {
-    if (!mapa) return;
-    mapa.eachLayer(l => l instanceof L.TileLayer || mapa.removeLayer(l));
-    const coordenadas: [number, number][] = [];
-    ordenClientes.forEach(idCli => {
-      const cli = datos.clientes.find(c => c.id === idCli);
-      if (cli && cli.lat && cli.lon) {
-        coordenadas.push([cli.lat, cli.lon]);
-        L.marker([cli.lat, cli.lon]).addTo(mapa)
-          .bindPopup(`<b>${cli.nombre}</b>`);
-      }
-    });
-    if (coordenadas.length >= 2) {
-      L.polyline(coordenadas, { color: '#b91c1c', weight: 4 }).addTo(mapa);
-      mapa.fitBounds(coordenadas);
-    }
-  };
+    setForm({ ...form, ordenClientes: clientesSeleccionados });
+  }
 
   async function guardar(e: React.FormEvent) {
     e.preventDefault();
-    if (!idOperador || !idUnidad || !nombreRuta || ordenClientes.length === 0) {
+    if (!form.nombre || !form.idOperador || !form.idUnidad || clientesSeleccionados.length === 0) {
       return alert('Completa todos los campos y selecciona al menos un cliente');
     }
+
     if (editId) {
       setDatos(prev => ({
         ...prev,
-        rutas: prev.rutas.map(r => r.id === editId ? {
-          ...r, idOperador, idUnidad, nombre: nombreRuta, ordenClientes
-        } as Ruta : r)
+        rutas: prev.rutas.map((r: Ruta) =>
+          r.id === editId
+            ? { ...r, nombre: form.nombre!, idOperador: form.idOperador!, idUnidad: form.idUnidad!, ordenClientes: clientesSeleccionados } as Ruta
+            : r
+        )
       }));
     } else {
       const nueva: Ruta = {
-        id: Date.now(), idOperador, idUnidad, nombre: nombreRuta, ordenClientes
+        id: Date.now(),
+        nombre: form.nombre!,
+        idOperador: form.idOperador!,
+        idUnidad: form.idUnidad!,
+        ordenClientes: clientesSeleccionados
       };
       setDatos(prev => ({ ...prev, rutas: [...prev.rutas, nueva] }));
     }
+
     await guardarCambios();
-    setIdOperador(''); setIdUnidad(''); setNombreRuta('');
-    setClientesSeleccionados([]); setOrdenClientes([]); setEditId(null);
+    setForm({ nombre: '', idOperador: 0, idUnidad: 0, ordenClientes: [] });
+    setClientesSeleccionados([]);
+    setEditId(null);
   }
 
   function editar(r: Ruta) {
-    setIdOperador(r.idOperador);
-    setIdUnidad(r.idUnidad);
-    setNombreRuta(r.nombre);
-    setOrdenClientes(r.ordenClientes);
+    setForm(r);
     setClientesSeleccionados(r.ordenClientes);
     setEditId(r.id);
   }
 
   async function eliminar(id: number) {
     if (!confirm('¿Eliminar esta ruta?')) return;
-    setDatos(prev => ({ ...prev, rutas: prev.rutas.filter(r => r.id !== id) }));
+    setDatos(prev => ({ ...prev, rutas: prev.rutas.filter((r: Ruta) => r.id !== id) }));
     await guardarCambios();
+  }
+
+  function getNombreOperador(id: number) {
+    return datos.operadores.find((o: Operador) => o.id === id)?.nombre || '—';
+  }
+
+  function getNombreUnidad(id: number) {
+    const u = datos.unidades.find((uni: Unidad) => uni.id === id);
+    return u ? `${u.placa} - ${u.modelo}` : '—';
+  }
+
+  function getNombreCliente(id: number) {
+    return datos.clientes.find((c: Cliente) => c.id === id)?.nombre || '—';
   }
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-red-200 mb-4">📍 Asignar Ruta</h2>
+      <h2 className="text-xl font-bold text-red-200 mb-4">🗺️ Gestión de Rutas</h2>
+
       <form onSubmit={guardar} className="space-y-3 mb-6">
-        <div className="grid grid-cols-2 gap-3">
-          <select value={idOperador} onChange={e => setIdOperador(Number(e.target.value) || '')}
-            className="p-3 rounded-lg bg-black border border-red-800">
-            <option value="">-- Selecciona Operador --</option>
-            {datos.operadores.map(op => (
-              <option key={op.id} value={op.id}>{op.nombre}</option>
-            ))}
-          </select>
-          <select value={idUnidad} onChange={e => setIdUnidad(Number(e.target.value) || '')}
-            className="p-3 rounded-lg bg-black border border-red-800">
-            <option value="">-- Selecciona Unidad --</option>
-            {datos.unidades.map(u => (
-              <option key={u.id} value={u.id}>{u.placa} — {u.modelo}</option>
-            ))}
-          </select>
-        </div>
-        <input placeholder="Nombre de la ruta / zona" value={nombreRuta}
-          onChange={e => setNombreRuta(e.target.value)}
-          className="w-full p-3 rounded-lg bg-black border border-red-800" />
-        
-        <h3 className="font-semibold text-red-200 mt-4">Selecciona clientes (orden de recorrido):</h3>
-        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border border-red-800 rounded-lg">
-          {datos.clientes.map(cli => (
-            <label key={cli.id} className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={clientesSeleccionados.includes(cli.id)}
-                onChange={() => toggleCliente(cli.id)} />
-              {cli.nombre}
-            </label>
+        <input
+          placeholder="Nombre de la ruta"
+          value={form.nombre || ''}
+          onChange={e => setForm({ ...form, nombre: e.target.value })}
+          className="w-full p-3 rounded-lg bg-black border border-red-800"
+        />
+
+        <select
+          value={form.idOperador || 0}
+          onChange={e => setForm({ ...form, idOperador: Number(e.target.value) })}
+          className="w-full p-3 rounded-lg bg-black border border-red-800"
+        >
+          <option value={0}>-- Selecciona Operador --</option>
+          {datos.operadores.map((o: Operador) => (
+            <option key={o.id} value={o.id}>{o.nombre}</option>
           ))}
-        </div>
+        </select>
 
-        {ordenClientes.length > 0 && (
-          <div className="bg-green-900/30 p-3 rounded-lg">
-            <strong>✅ Orden de recorrido:</strong>
-            <ol className="list-decimal list-inside mt-1">
-              {ordenClientes.map(idCli => {
-                const cli = datos.clientes.find(c => c.id === idCli);
-                return cli ? <li key={idCli}>{cli.nombre}</li> : null;
-              })}
-            </ol>
+        <select
+          value={form.idUnidad || 0}
+          onChange={e => setForm({ ...form, idUnidad: Number(e.target.value) })}
+          className="w-full p-3 rounded-lg bg-black border border-red-800"
+        >
+          <option value={0}>-- Selecciona Unidad --</option>
+          {datos.unidades.map((u: Unidad) => (
+            <option key={u.id} value={u.id}>{u.placa} — {u.modelo}</option>
+          ))}
+        </select>
+
+        <div className="border border-red-800 rounded-lg p-3 bg-black">
+          <p className="text-sm font-semibold mb-2">Selecciona los Clientes (orden de entrega):</p>
+          <div className="max-h-40 overflow-y-auto space-y-1">
+            {datos.clientes.length === 0 ? (
+              <p className="text-gray-400 text-sm">No hay clientes registrados aún</p>
+            ) : (
+              datos.clientes.map((c: Cliente) => (
+                <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={clientesSeleccionados.includes(c.id)}
+                    onChange={() => seleccionarCliente(c.id)}
+                  />
+                  {c.nombre}
+                </label>
+              ))
+            )}
           </div>
-        )}
-
-        <div className="flex gap-2 mt-3">
-          <button type="button" onClick={dibujarRuta} className="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded-lg">🗺️ Ver Ruta</button>
-          <button type="submit" className="bg-green-700 hover:bg-green-600 px-6 py-2 rounded-lg font-bold">💾 Guardar Ruta</button>
+          {clientesSeleccionados.length > 0 && (
+            <p className="text-xs text-gray-400 mt-2">Seleccionados: {clientesSeleccionados.length} cliente(s)</p>
+          )}
         </div>
+
+        <button type="submit" className="bg-green-700 hover:bg-green-600 px-6 py-2 rounded-lg font-bold">
+          {editId ? '✅ Actualizar' : '✅ Crear Ruta'}
+        </button>
       </form>
 
-      <div id="mapaRutas" className="w-full h-80 rounded-lg border border-red-800 mb-6"></div>
-
-      <h3 className="font-bold text-lg mt-8 mb-3">Rutas Guardadas</h3>
-      <div className="space-y-2">
-        {datos.rutas.length === 0 ? <p className="text-gray-400">Sin rutas registradas</p> :
-          datos.rutas.map(r => {
-            const op = datos.operadores.find(x => x.id === r.idOperador);
-            const un = datos.unidades.find(x => x.id === r.idUnidad);
-            return (
-              <div key={r.id} className="p-3 border border-red-800 rounded-lg bg-black/40">
-                <strong>{r.nombre}</strong><br />
-                Operador: {op?.nombre || '—'} | Unidad: {un?.placa || '—'}<br />
-                Clientes en ruta: {r.ordenClientes.length}
-                <div className="mt-2">
-                  <button onClick={() => editar(r)} className="text-blue-400 mr-3">✏️ Editar</button>
-                  <button onClick={() => eliminar(r.id)} className="text-red-400">🗑️ Eliminar</button>
-                </div>
-              </div>
-            );
-          })
-        }
-      </div>
+      <table className="w-full text-sm">
+        <thead className="bg-red-900/40">
+          <tr>
+            <th className="p-2 text-left">Nombre</th>
+            <th>Operador</th>
+            <th>Unidad</th>
+            <th>Clientes en ruta</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {datos.rutas.map((r: Ruta) => (
+            <tr key={r.id} className="border-t border-red-900/30">
+              <td className="p-2">{r.nombre}</td>
+              <td>{getNombreOperador(r.idOperador)}</td>
+              <td>{getNombreUnidad(r.idUnidad)}</td>
+              <td className="text-xs">
+                {r.ordenClientes.map(id => getNombreCliente(id)).join(' → ')}
+              </td>
+              <td>
+                <button onClick={() => editar(r)} className="text-blue-400 mr-2">✏️</button>
+                <button onClick={() => eliminar(r.id)} className="text-red-400">🗑️</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

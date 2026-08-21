@@ -1,8 +1,9 @@
-import ... from "../context/DatosContext"
-import ... from "../types";
+import { useDatos } from "../context/DatosContext";
+
 
 export default function RespaldoPage() {
   const { datos } = useDatos();
+
 
   function descargar() {
     const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
@@ -13,6 +14,7 @@ export default function RespaldoPage() {
     a.click();
     URL.revokeObjectURL(url);
   }
+
 
   return (
     <div>

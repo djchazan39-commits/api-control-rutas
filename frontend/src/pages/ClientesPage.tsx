@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { useDatos } from '../context/DatosContext';
-import { Cliente } from '../types';
+import { Cliente } from "../types";
+import { useDatos } from "../context/DatosContext";
+
 
 export default function ClientesPage() {
   const { datos, guardarCambios, setDatos } = useDatos();
   const [form, setForm] = useState<Partial<Cliente>>({ nombre: '', direccion: '', lat: 0, lon: 0 });
   const [editId, setEditId] = useState<number | null>(null);
+
 
   function obtenerGPS() {
     if (!navigator.geolocation) return alert('GPS no disponible');
@@ -14,11 +16,12 @@ export default function ClientesPage() {
     });
   }
 
+
   async function guardar(e: React.FormEvent) {
     e.preventDefault();
     if (!form.nombre) return alert('Escribe el nombre');
     if (editId) {
-      setDatos(prev => ({ ...prev, clientes: prev.clientes.map(c => c.id === editId ? { ...c, ...form } as Cliente : c) }));
+      setDatos(prev => ({ ...prev, clientes: prev.clientes.map((c: Cliente) => c.id === editId ? { ...c, ...form } as Cliente : c) }));
     } else {
       setDatos(prev => ({ ...prev, clientes: [...prev.clientes, { ...form, id: Date.now() } as Cliente] }));
     }
@@ -27,12 +30,14 @@ export default function ClientesPage() {
     setEditId(null);
   }
 
+
   function editar(c: Cliente) { setForm(c); setEditId(c.id); }
   async function eliminar(id: number) {
     if (!confirm('¿Eliminar?')) return;
-    setDatos(prev => ({ ...prev, clientes: prev.clientes.filter(c => c.id !== id) }));
+    setDatos(prev => ({ ...prev, clientes: prev.clientes.filter((c: Cliente) => c.id !== id) }));
     await guardarCambios();
   }
+
 
   return (
     <div>
@@ -50,7 +55,7 @@ export default function ClientesPage() {
       <table className="w-full text-sm">
         <thead className="bg-red-900/40"><tr><th className="p-2 text-left">Nombre</th><th>Dirección</th><th>Coordenadas</th><th>Acciones</th></tr></thead>
         <tbody>
-          {datos.clientes.map(c => (
+          {datos.clientes.map((c: Cliente) => (
             <tr key={c.id} className="border-t border-red-900/30">
               <td className="p-2">{c.nombre}</td><td>{c.direccion || '—'}</td>
               <td>{c.lat && c.lon ? `${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}` : '—'}</td>
