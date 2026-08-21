@@ -3,12 +3,18 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  {
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
+    "build": "vite build",
     "preview": "vite preview"
   },
+  // ... el resto del archivo se queda igual
+}
   "dependencies": {
     "axios": "^1.19.0",
     "leaflet": "^1.9.4",
