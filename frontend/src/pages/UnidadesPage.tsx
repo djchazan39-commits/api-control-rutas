@@ -1,55 +1,79 @@
-import { useState } from 'react';
+import { useState, useEffect } from "react";
 import { useDatos } from "../context/DatosContext";
-import { Unidad } from "../types";
 
 
 export default function UnidadesPage() {
-  const { datos, guardarCambios, setDatos } = useDatos();
-  const [form, setForm] = useState<Partial<Unidad>>({ placa: '', modelo: '' });
-  const [editId, setEditId] = useState<number | null>(null);
+  const { datosApp, setDatosApp, guardarCambios } = useDatos();
+  const lista = datosApp?.unidades || [];
+  const [modo, setModo] = useState("lista");
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [form, setForm] = useState({ placa: "", marca: "", modelo: "", capacidad: "" });
 
+  useEffect(() => { if (modo === "form") setTimeout(() => document.getElementById("campo_placa")?.focus(), 50); }, [modo]);
+  const manejarEnter = (e: React.KeyboardEvent, siguienteId: string | null) => {
+    if (e.key === "Enter") { e.preventDefault(); siguienteId ? document.getElementById(siguienteId)?.focus() : guardar(); }
+  };
+  const limpiar = () => { setForm({ placa: "", marca: "", modelo: "", capacidad: "" }); setEditandoId(null); setModo("lista"); };
 
-  async function guardar(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.placa || !form.modelo) return alert('Completa todos los campos');
-    if (editId) {
-      setDatos(prev => ({ ...prev, unidades: prev.unidades.map((u: Unidad) => u.id === editId ? { ...u, ...form } as Unidad : u) }));
+  const guardar = () => {
+    if (!form.placa.trim()) { alert("⚠️ Escribe las placas"); return; }
+    if (editandoId) {
+      setDatosApp({ ...datosApp, unidades: lista.map((u) => u.id === editandoId ? { ...u, ...form } : u) });
     } else {
-      setDatos(prev => ({ ...prev, unidades: [...prev.unidades, { ...form, id: Date.now() } as Unidad] }));
+      setDatosApp({ ...datosApp, unidades: [...lista, { ...form, id: Date.now() }] });
     }
-    await guardarCambios();
-    setForm({ placa: '', modelo: '' });
-    setEditId(null);
-  }
+    guardarCambios(); limpiar();
+  };
 
-
-  function editar(u: Unidad) { setForm(u); setEditId(u.id); }
-  async function eliminar(id: number) {
-    if (!confirm('¿Eliminar?')) return;
-    setDatos(prev => ({ ...prev, unidades: prev.unidades.filter((u: Unidad) => u.id !== id) }));
-    await guardarCambios();
-  }
+  const editar = (u: any) => { setEditandoId(u.id); setForm({ placa: u.placa, marca: u.marca, modelo: u.modelo, capacidad: u.capacidad }); setModo("form"); };
+  const eliminar = (id: number) => { if (!confirm("¿Eliminar unidad?")) return; setDatosApp({ ...datosApp, unidades: lista.filter(u => u.id !== id) }); guardarCambios(); };
 
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-red-200 mb-4">🚛 Unidades</h2>
-      <form onSubmit={guardar} className="space-y-3 mb-6">
-        <input placeholder="Placa" value={form.placa} onChange={e => setForm({ ...form, placa: e.target.value })} className="w-full p-3 rounded-lg bg-black border border-red-800" />
-        <input placeholder="Marca y Modelo" value={form.modelo} onChange={e => setForm({ ...form, modelo: e.target.value })} className="w-full p-3 rounded-lg bg-black border border-red-800" />
-        <button type="submit" className="bg-green-700 hover:bg-green-600 px-6 py-2 rounded-lg font-bold">✅ Guardar</button>
-      </form>
-      <table className="w-full text-sm">
-        <thead className="bg-red-900/40"><tr><th className="p-2 text-left">Placa</th><th>Modelo</th><th>Acciones</th></tr></thead>
-        <tbody>
-          {datos.unidades.map((u: Unidad) => (
-            <tr key={u.id} className="border-t border-red-900/30">
-              <td className="p-2">{u.placa}</td><td>{u.modelo}</td>
-              <td><button onClick={() => editar(u)} className="text-blue-400 mr-2">✏️</button><button onClick={() => eliminar(u.id)} className="text-red-400">🗑️</button></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <h2 className="text-xl font-bold mb-4 text-white">🚛 Gestión de Unidades</h2>
+      {modo === "lista" ? (
+        <>
+          <button onClick={() => setModo("form")} className="mb-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded">➕ Nueva Unidad</button>
+          {lista.length === 0 ? <p className="text-amber-300">Sin unidades registradas</p> : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b"><th className="py-2 px-2 text-left">Placas</th><th className="py-2 px-2 text-left">Marca</th><th className="py-2 px-2 text-left">Modelo</th><th className="py-2 px-2 text-left">Capacidad</th><th className="py-2 px-2 text-right">Acciones</th></tr></thead>
+                <tbody>
+                  {lista.map((u: any) => (
+                    <tr key={u.id} className="border-b border-white/10">
+                      <td className="py-2 px-2 font-bold">{u.placa}</td>
+                      <td className="py-2 px-2">{u.marca}</td>
+                      <td className="py-2 px-2">{u.modelo}</td>
+                      <td className="py-2 px-2">{u.capacidad}</td>
+                      <td className="py-2 px-2 text-right">
+                        <button onClick={() => editar(u)} className="text-yellow-300 mr-2">Editar</button>
+                        <button onClick={() => eliminar(u.id)} className="text-red-300">Eliminar</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <h3 className="font-bold mb-4">{editandoId ? "Editar" : "Nueva"} Unidad</h3>
+          <div className="space-y-3">
+            <div><label className="block text-sm mb-1">Placas *</label><input id="campo_placa" type="text" value={form.placa} onChange={e=>setForm({...form,placa:e.target.value})} onKeyDown={e=>manejarEnter(e,"campo_marca")} className="w-full px-3 py-2 bg-white/20 rounded border" /></div>
+            <div><label className="block text-sm mb-1">Marca</label><input id="campo_marca" type="text" value={form.marca} onChange={e=>setForm({...form,marca:e.target.value})} onKeyDown={e=>manejarEnter(e,"campo_modelo")} className="w-full px-3 py-2 bg-white/20 rounded border" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-sm mb-1">Modelo / Año</label><input id="campo_modelo" type="text" value={form.modelo} onChange={e=>setForm({...form,modelo:e.target.value})} onKeyDown={e=>manejarEnter(e,"campo_capacidad")} className="w-full px-3 py-2 bg-white/20 rounded border" /></div>
+              <div><label className="block text-sm mb-1">Capacidad</label><input id="campo_capacidad" type="text" value={form.capacidad} onChange={e=>setForm({...form,capacidad:e.target.value})} onKeyDown={e=>manejarEnter(e,null)} className="w-full px-3 py-2 bg-white/20 rounded border" placeholder="3 toneladas..." /></div>
+            </div>
+          </div>
+          <div className="flex gap-3 mt-6">
+            <button onClick={limpiar} className="px-4 py-2 bg-gray-600 rounded">Cancelar</button>
+            <button onClick={guardar} className="px-4 py-2 bg-green-600 rounded">💾 Guardar</button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

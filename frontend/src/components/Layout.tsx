@@ -1,124 +1,95 @@
-import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useDatos } from '../context/DatosContext';
+import { useDatos } from "../context/DatosContext";
+import { Outlet, useLocation, Navigate, Link } from "react-router-dom";
 
-const menusPorRol: Record<string, { to: string; label: string }[]> = {
+const menusPorRol = {
   administrador: [
-    { to: "/dashboard/usuarios", label: "👤 Usuarios" },
-    { to: "/dashboard/operadores", label: "👷 Operadores" },
-    { to: "/dashboard/unidades", label: "🚛 Unidades" },
-    { to: "/dashboard/clientes", label: "🏢 Clientes" },
-    { to: "/dashboard/rutas", label: "📍 Rutas" },
-    { to: "/dashboard/seguimiento", label: "👀 Seguimiento" },
-    { to: "/dashboard/reportes", label: "📊 Reportes" },
-    { to: "/dashboard/respaldo", label: "💾 Respaldo" }
+    { to: "/dashboard/usuarios", texto: "👤 Usuarios" },
+    { to: "/dashboard/operadores", texto: "👷 Operadores" },
+    { to: "/dashboard/unidades", texto: "🚛 Unidades" },
+    { to: "/dashboard/clientes", texto: "🏢 Clientes" },
+    { to: "/dashboard/rutas", texto: "📍 Rutas" },
+    { to: "/dashboard/seguimiento", texto: "👀 Seguimiento" },
+    { to: "/dashboard/reportes", texto: "📊 Reportes" },
+    { to: "/dashboard/respaldo", texto: "💾 Respaldo" },
+    { to: "/dashboard/mi-ruta", texto: "🚛 Mi Ruta" },
+    { to: "/dashboard/combustible", texto: "⛽ Combustible" }
   ],
   director: [
-    { to: "/dashboard/usuarios", label: "👤 Usuarios" },
-    { to: "/dashboard/operadores", label: "👷 Operadores" },
-    { to: "/dashboard/unidades", label: "🚛 Unidades" },
-    { to: "/dashboard/clientes", label: "🏢 Clientes" },
-    { to: "/dashboard/rutas", label: "📍 Rutas" },
-    { to: "/dashboard/seguimiento", label: "👀 Seguimiento" },
-    { to: "/dashboard/reportes", label: "📊 Reportes" },
-    { to: "/dashboard/respaldo", label: "💾 Respaldo" }
+    { to: "/dashboard/usuarios", texto: "👤 Usuarios" },
+    { to: "/dashboard/operadores", texto: "👷 Operadores" },
+    { to: "/dashboard/unidades", texto: "🚛 Unidades" },
+    { to: "/dashboard/clientes", texto: "🏢 Clientes" },
+    { to: "/dashboard/rutas", texto: "📍 Rutas" },
+    { to: "/dashboard/seguimiento", texto: "👀 Seguimiento" },
+    { to: "/dashboard/reportes", texto: "📊 Reportes" },
+    { to: "/dashboard/respaldo", texto: "💾 Respaldo" },
+    { to: "/dashboard/mi-ruta", texto: "🚛 Mi Ruta" },
+    { to: "/dashboard/combustible", texto: "⛽ Combustible" }
   ],
   logistica: [
-    { to: "/dashboard/operadores", label: "👷 Operadores" },
-    { to: "/dashboard/unidades", label: "🚛 Unidades" },
-    { to: "/dashboard/clientes", label: "🏢 Clientes" },
-    { to: "/dashboard/rutas", label: "📍 Rutas" },
-    { to: "/dashboard/seguimiento", label: "👀 Seguimiento" },
+    { to: "/dashboard/operadores", texto: "👷 Operadores" },
+    { to: "/dashboard/unidades", texto: "🚛 Unidades" },
+    { to: "/dashboard/clientes", texto: "🏢 Clientes" },
+    { to: "/dashboard/rutas", texto: "📍 Rutas" },
+    { to: "/dashboard/seguimiento", texto: "👀 Seguimiento" },
+    { to: "/dashboard/reportes", texto: "📊 Reportes" },
   ],
   operador: [
-    { to: "/dashboard/mi-ruta", label: "🚛 Mi Ruta" },
-    { to: "/dashboard/combustible", label: "⛽ Combustible" }
+    { to: "/dashboard/mi-ruta", texto: "🚛 Mi Ruta" },
+    { to: "/dashboard/combustible", texto: "⛽ Combustible" }
   ]
 };
 
 export default function Layout() {
-  const { usuarioActivo } = useDatos();
-  const navigate = useNavigate();
+  const { usuarioActivo, cerrarSesion } = useDatos();
   const location = useLocation();
-  const menu = usuarioActivo ? menusPorRol[usuarioActivo.rol] || [] : [];
 
-  // ✅ DETECTA EL MENÚ PRINCIPAL DE TODAS LAS FORMAS POSIBLES
-  const esMenuPrincipal = 
-    location.pathname === "/dashboard" || 
-    location.pathname === "/dashboard/" ||
-    location.pathname.endsWith("/dashboard");
-
-  function cerrarSesion() {
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.replace('/');
-  }
-
-  function volverAlMenu() {
-    navigate("/dashboard");
-  }
+  if (!usuarioActivo) return <Navigate to="/" replace />;
+  const ruta = location.pathname;
+  const esMenuPrincipal = ruta === "/dashboard" || ruta === "/dashboard/";
+  const rol = usuarioActivo.rol as keyof typeof menusPorRol;
+  const menu = menusPorRol[rol] || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-950 to-black text-white flex flex-col">
-      {/* LOGOTIPO ARRIBA */}
-      <div className="text-center py-3 border-b border-red-800 bg-black/40">
-        <img 
-          src="/logo.png" 
-          alt="Logotipo de la Empresa" 
-          className="mx-auto h-16 w-auto object-contain mb-1"
-        />
-        <p className="text-sm text-gray-400">Control de Rutas Sierra Querétaro</p>
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+      <div className="text-center py-4">
+        <img src="/logo.png" alt="Logo" className="mx-auto h-24 w-auto object-contain" />
       </div>
 
-      {/* CONTENIDO PRINCIPAL */}
-      <main className="flex-1 max-w-6xl mx-auto p-4 w-full">
+      <main className="p-4 md:p-6 flex-grow">
         {esMenuPrincipal ? (
-          // ✅ MENÚ PRINCIPAL: Mensaje + BOTONES CENTRADOS EN 2 COLUMNAS
-          <div className="flex flex-col justify-center py-8">
+          <>
             <div className="text-center mb-8">
-              <h2 className="text-xl font-bold text-red-200 mb-2">✅ Bienvenido, {usuarioActivo?.nombre}</h2>
-              <p className="text-gray-300">Selecciona una opción para comenzar</p>
+              <h2 className="text-xl font-bold text-amber-300 mb-2">✅ Bienvenido, {usuarioActivo.nombre}</h2>
+              <p className="text-gray-300">Selecciona una opción del menú para comenzar</p>
             </div>
-
-            {/* ✅ BOTONES DEL MENÚ — CENTRADOS EN 2 COLUMNAS */}
-            <nav className="grid grid-cols-2 gap-4 max-w-xl mx-auto w-full">
-              {menu.map(item => (
-                <Link 
-                  key={item.to} 
-                  to={item.to} 
-                  className="bg-red-900/40 hover:bg-red-800/60 p-4 rounded-lg font-semibold transition text-center border border-red-800"
-                >
-                  {item.label}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              {menu.map((item, i) => (
+                <Link key={i} to={item.to} className="bg-gray-800 hover:bg-gray-700 p-6 rounded-lg text-center text-lg font-medium transition-colors block">
+                  {item.texto}
                 </Link>
               ))}
-            </nav>
-          </div>
-        ) : (
-          // ✅ FORMULARIO: Solo formulario + botón Volver
-          <div>
-            <div className="bg-black/40 border border-red-800 rounded-xl p-5 mb-4">
-              <Outlet />
             </div>
-            <button 
-              onClick={volverAlMenu} 
-              className="w-full bg-gray-700 hover:bg-gray-600 p-3 rounded-lg font-semibold mb-3"
-            >
-              🏠 Volver al Menú Principal
-            </button>
+          </>
+        ) : (
+          <div className="bg-gradient-to-b from-black via-red-950 to-red-900 p-4 md:p-6 rounded-lg max-w-4xl mx-auto">
+            <Outlet />
           </div>
         )}
       </main>
 
-      {/* 🔽 SOLO CERRAR SESIÓN — ABAJO DEL TODO 🔽 */}
-      {esMenuPrincipal && (
-        <footer className="border-t border-red-800 bg-black/50 p-4">
-          <button 
-            onClick={cerrarSesion} 
-            className="w-full max-w-xl mx-auto block bg-red-700 hover:bg-red-600 p-3 rounded-lg font-semibold"
-          >
+      <footer className="p-4 md:p-6 mt-auto">
+        <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          {!esMenuPrincipal ? (
+            <Link to="/dashboard" className="w-full md:w-auto bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded font-medium transition-colors text-center">
+              ← Volver al Menú Principal
+            </Link>
+          ) : <div />}
+          <button onClick={cerrarSesion} className="w-full md:w-auto bg-red-700 hover:bg-red-800 px-6 py-3 rounded font-medium transition-colors">
             🚪 Cerrar Sesión
           </button>
-        </footer>
-      )}
+        </div>
+      </footer>
     </div>
   );
 }

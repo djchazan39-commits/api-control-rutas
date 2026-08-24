@@ -2,7 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+/* Estilos adicionales para que todo se vea bien */
+* {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Para que el botón de imprimir en reportes funcione bien */
+@media print {
+  header, footer, aside, nav, form, button {
+    display: none !important;
+  }
 }

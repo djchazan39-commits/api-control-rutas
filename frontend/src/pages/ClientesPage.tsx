@@ -1,69 +1,86 @@
-import { useState } from 'react';
-import { Cliente } from "../types";
+import { useState, useEffect } from "react";
 import { useDatos } from "../context/DatosContext";
 
 
 export default function ClientesPage() {
-  const { datos, guardarCambios, setDatos } = useDatos();
-  const [form, setForm] = useState<Partial<Cliente>>({ nombre: '', direccion: '', lat: 0, lon: 0 });
-  const [editId, setEditId] = useState<number | null>(null);
+  const { datosApp, setDatosApp, guardarCambios } = useDatos();
+  const lista = datosApp?.clientes || [];
+  const [modo, setModo] = useState("lista");
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [form, setForm] = useState({ nombre: "", direccion: "", telefono: "", latitud: "", longitud: "" });
 
+  useEffect(() => { if (modo === "form") setTimeout(() => document.getElementById("campo_nombre")?.focus(), 50); }, [modo]);
+  const manejarEnter = (e: React.KeyboardEvent, siguienteId: string | null) => {
+    if (e.key === "Enter") { e.preventDefault(); siguienteId ? document.getElementById(siguienteId)?.focus() : guardar(); }
+  };
+  const limpiar = () => { setForm({ nombre: "", direccion: "", telefono: "", latitud: "", longitud: "" }); setEditandoId(null); setModo("lista"); };
 
-  function obtenerGPS() {
-    if (!navigator.geolocation) return alert('GPS no disponible');
-    navigator.geolocation.getCurrentPosition(pos => {
-      setForm(prev => ({ ...prev, lat: pos.coords.latitude, lon: pos.coords.longitude }));
-    });
-  }
+  const obtenerUbicacion = () => {
+    if (!navigator.geolocation) { alert("❌ No disponible"); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setForm(p => ({ ...p, latitud: String(pos.coords.latitude), longitud: String(pos.coords.longitude) })); },
+      () => { alert("❌ No se pudo obtener ubicación"); }
+    );
+  };
 
-
-  async function guardar(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.nombre) return alert('Escribe el nombre');
-    if (editId) {
-      setDatos(prev => ({ ...prev, clientes: prev.clientes.map((c: Cliente) => c.id === editId ? { ...c, ...form } as Cliente : c) }));
+  const guardar = () => {
+    if (!form.nombre.trim()) { alert("⚠️ Escribe el nombre del cliente"); return; }
+    if (editandoId) {
+      setDatosApp({ ...datosApp, clientes: lista.map((c) => c.id === editandoId ? { ...c, ...form } : c) });
     } else {
-      setDatos(prev => ({ ...prev, clientes: [...prev.clientes, { ...form, id: Date.now() } as Cliente] }));
+      setDatosApp({ ...datosApp, clientes: [...lista, { ...form, id: Date.now() }] });
     }
-    await guardarCambios();
-    setForm({ nombre: '', direccion: '', lat: 0, lon: 0 });
-    setEditId(null);
-  }
+    guardarCambios(); limpiar();
+  };
 
-
-  function editar(c: Cliente) { setForm(c); setEditId(c.id); }
-  async function eliminar(id: number) {
-    if (!confirm('¿Eliminar?')) return;
-    setDatos(prev => ({ ...prev, clientes: prev.clientes.filter((c: Cliente) => c.id !== id) }));
-    await guardarCambios();
-  }
+  const editar = (c: any) => { setEditandoId(c.id); setForm({ nombre: c.nombre, direccion: c.direccion, telefono: c.telefono, latitud: c.latitud, longitud: c.longitud }); setModo("form"); };
+  const eliminar = (id: number) => { if (!confirm("¿Eliminar cliente?")) return; setDatosApp({ ...datosApp, clientes: lista.filter(c => c.id !== id) }); guardarCambios(); };
 
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-red-200 mb-4">🏢 Clientes</h2>
-      <form onSubmit={guardar} className="space-y-3 mb-6">
-        <input placeholder="Nombre" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className="w-full p-3 rounded-lg bg-black border border-red-800" />
-        <input placeholder="Dirección" value={form.direccion} onChange={e => setForm({ ...form, direccion: e.target.value })} className="w-full p-3 rounded-lg bg-black border border-red-800" />
-        <div className="grid grid-cols-2 gap-3">
-          <input placeholder="Latitud" value={form.lat || ''} onChange={e => setForm({ ...form, lat: Number(e.target.value) })} className="p-3 rounded-lg bg-black border border-red-800" />
-          <input placeholder="Longitud" value={form.lon || ''} onChange={e => setForm({ ...form, lon: Number(e.target.value) })} className="p-3 rounded-lg bg-black border border-red-800" />
-        </div>
-        <button type="button" onClick={obtenerGPS} className="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded-lg">📍 Obtener GPS</button>
-        <button type="submit" className="bg-green-700 hover:bg-green-600 px-6 py-2 rounded-lg font-bold ml-2">✅ Guardar</button>
-      </form>
-      <table className="w-full text-sm">
-        <thead className="bg-red-900/40"><tr><th className="p-2 text-left">Nombre</th><th>Dirección</th><th>Coordenadas</th><th>Acciones</th></tr></thead>
-        <tbody>
-          {datos.clientes.map((c: Cliente) => (
-            <tr key={c.id} className="border-t border-red-900/30">
-              <td className="p-2">{c.nombre}</td><td>{c.direccion || '—'}</td>
-              <td>{c.lat && c.lon ? `${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}` : '—'}</td>
-              <td><button onClick={() => editar(c)} className="text-blue-400 mr-2">✏️</button><button onClick={() => eliminar(c.id)} className="text-red-400">🗑️</button></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <h2 className="text-xl font-bold mb-4 text-white">🏢 Gestión de Clientes</h2>
+      {modo === "lista" ? (
+        <>
+          <button onClick={() => setModo("form")} className="mb-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded">➕ Nuevo Cliente</button>
+          {lista.length === 0 ? <p className="text-amber-300">Sin clientes registrados</p> : (
+            <div className="space-y-2">
+              {lista.map((c: any) => (
+                <div key={c.id} className="p-3 bg-black/40 rounded border border-white/10 flex justify-between items-start gap-3">
+                  <div>
+                    <p className="font-bold">{c.nombre}</p>
+                    <p className="text-sm text-gray-300">{c.direccion}</p>
+                    {c.telefono && <p className="text-sm">📞 {c.telefono}</p>}
+                    {c.latitud && <p className="text-xs text-green-400">📍 {c.latitud}, {c.longitud}</p>}
+                  </div>
+                  <div className="shrink-0">
+                    <button onClick={() => editar(c)} className="text-yellow-300 mr-2">Editar</button>
+                    <button onClick={() => eliminar(c.id)} className="text-red-300">Eliminar</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <h3 className="font-bold mb-4">{editandoId ? "Editar" : "Nuevo"} Cliente</h3>
+          <div className="space-y-3">
+            <div><label className="block text-sm mb-1">Nombre *</label><input id="campo_nombre" type="text" value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} onKeyDown={e=>manejarEnter(e,"campo_direccion")} className="w-full px-3 py-2 bg-white/20 rounded border" /></div>
+            <div><label className="block text-sm mb-1">Dirección</label><input id="campo_direccion" type="text" value={form.direccion} onChange={e=>setForm({...form,direccion:e.target.value})} onKeyDown={e=>manejarEnter(e,"campo_telefono")} className="w-full px-3 py-2 bg-white/20 rounded border" /></div>
+            <div><label className="block text-sm mb-1">Teléfono</label><input id="campo_telefono" type="tel" value={form.telefono} onChange={e=>setForm({...form,telefono:e.target.value})} onKeyDown={e=>manejarEnter(e,"campo_lat")} className="w-full px-3 py-2 bg-white/20 rounded border" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-sm mb-1">Latitud</label><input id="campo_lat" type="text" value={form.latitud} onChange={e=>setForm({...form,latitud:e.target.value})} onKeyDown={e=>manejarEnter(e,"campo_lng")} className="w-full px-3 py-2 bg-white/20 rounded border" /></div>
+              <div><label className="block text-sm mb-1">Longitud</label><input id="campo_lng" type="text" value={form.longitud} onChange={e=>setForm({...form,longitud:e.target.value})} onKeyDown={e=>manejarEnter(e,null)} className="w-full px-3 py-2 bg-white/20 rounded border" /></div>
+            </div>
+            <button type="button" onClick={obtenerUbicacion} className="w-full py-2 bg-blue-700 rounded">📍 Usar mi ubicación actual</button>
+          </div>
+          <div className="flex gap-3 mt-4">
+            <button onClick={limpiar} className="px-4 py-2 bg-gray-600 rounded">Cancelar</button>
+            <button onClick={guardar} className="px-4 py-2 bg-green-600 rounded">💾 Guardar Cliente</button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

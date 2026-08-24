@@ -1,94 +1,215 @@
-import { useState } from 'react';
+import { useState } from "react";
 import { useDatos } from "../context/DatosContext";
-import { Usuario, Operador, Unidad, Cliente, Entrega, Combustible } from "../types";
-
 
 export default function ReportesPage() {
-  const { datos } = useDatos();
-  const [ver, setVer] = useState({ 
-    usuarios: true, 
-    operadores: true, 
-    unidades: true, 
-    clientes: true, 
-    entregas: true, 
-    combustible: true 
+  const { datosApp } = useDatos();
+  const { usuarios = [], operadores = [], unidades = [], clientes = [], entregas = [], combustible = [] } = datosApp || {};
+
+  const [seleccion = {
+    usuarios: true,
+    operadores: true,
+    unidades: true,
+    clientes: true,
+    entregas: true,
+    combustible: true,
+  }, setSeleccion] = useState<any>({
+    usuarios: true,
+    operadores: true,
+    unidades: true,
+    clientes: true,
+    entregas: true,
+    combustible: true,
   });
 
+  const toggleSeccion = (clave: string) => {
+    setSeleccion({ ...seleccion, [clave]: !seleccion[clave] });
+  };
+
+  const imprimir = () => {
+    window.print();
+  };
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-red-200 mb-4">📊 Generar Reportes</h2>
-      <div className="flex flex-wrap gap-3 mb-6">
-        {Object.entries(ver).map(([k, v]) => (
-          <label key={k} className="flex items-center gap-1">
-            <input type="checkbox" checked={v} onChange={e => setVer({...ver, [k]: e.target.checked})} />
-            {k.charAt(0).toUpperCase() + k.slice(1)}
-          </label>
-        ))}
+      <h2 className="text-xl font-bold mb-4 text-white">📊 Generador de Reportes</h2>
+
+      {/* SELECCIÓN DE CONTENIDO */}
+      <div className="mb-6 p-3 bg-black/40 rounded border border-white/10">
+        <p className="text-sm font-bold mb-3">✅ Selecciona lo que deseas incluir en el reporte:</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {[
+            { clave: "usuarios", etiqueta: "👤 Usuarios" },
+            { clave: "operadores", etiqueta: "👷 Operadores" },
+            { clave: "unidades", etiqueta: "🚛 Unidades" },
+            { clave: "clientes", etiqueta: "🏢 Clientes" },
+            { clave: "entregas", etiqueta: "📦 Entregas Reportadas" },
+            { clave: "combustible", etiqueta: "⛽ Combustible" },
+          ].map((item) => (
+            <label key={item.clave} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={seleccion[item.clave]}
+                onChange={() => toggleSeccion(item.clave)}
+                className="w-5 h-5"
+              />
+              <span className="text-white">{item.etiqueta}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
+      {/* VISTA PREVIA */}
+      <div className="mb-6">
+        <h3 className="font-bold mb-3 text-amber-300">📄 Vista Previa del Reporte</h3>
+        <div className="p-4 bg-black/40 rounded border border-white/10 space-y-6">
+          {seleccion.usuarios && (
+            <div>
+              <h4 className="font-bold text-lg border-b border-white/20 pb-1 mb-2">👤 Usuarios ({usuarios.length})</h4>
+              {usuarios.length === 0 ? (
+                <p className="text-sm text-gray-400">Sin registros</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left"><th>Nombre</th><th>Rol</th><th>Usuario</th></tr></thead>
+                  <tbody>
+                    {usuarios.map((u: any) => (
+                      <tr key={u.id} className="border-t border-white/10">
+                        <td className="py-1">{u.nombre}</td>
+                        <td>{u.rol}</td>
+                        <td>{u.nick}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
 
-      <div className="space-y-8">
-        {ver.usuarios && <section>
-          <h3 className="font-bold text-lg mb-2">👤 Usuarios</h3>
-          <table className="w-full text-sm">
-            <thead className="bg-red-900/40"><tr><th>Nombre</th><th>Usuario</th><th>Rol</th></tr></thead>
-            <tbody>{datos.usuarios.map((u: Usuario) => <tr key={u.id}><td>{u.nombre}</td><td>{u.nick}</td><td>{u.rol}</td></tr>)}</tbody>
-          </table>
-        </section>}
+          {seleccion.operadores && (
+            <div>
+              <h4 className="font-bold text-lg border-b border-white/20 pb-1 mb-2">👷 Operadores ({operadores.length})</h4>
+              {operadores.length === 0 ? (
+                <p className="text-sm text-gray-400">Sin registros</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left"><th>Nombre</th><th>Licencia</th><th>Vencimiento</th><th>Teléfono</th></tr></thead>
+                  <tbody>
+                    {operadores.map((o: any) => (
+                      <tr key={o.id} className="border-t border-white/10">
+                        <td className="py-1">{o.nombre}</td>
+                        <td>{o.licenciaTipo?.toUpperCase()} — {o.licenciaClase}</td>
+                        <td>{o.licenciaVence || "No registrado"}</td>
+                        <td>{o.telefono || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
 
+          {seleccion.unidades && (
+            <div>
+              <h4 className="font-bold text-lg border-b border-white/20 pb-1 mb-2">🚛 Unidades ({unidades.length})</h4>
+              {unidades.length === 0 ? (
+                <p className="text-sm text-gray-400">Sin registros</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left"><th>Placa</th><th>Marca</th><th>Modelo</th><th>Capacidad</th></tr></thead>
+                  <tbody>
+                    {unidades.map((u: any) => (
+                      <tr key={u.id} className="border-t border-white/10">
+                        <td className="py-1 font-bold">{u.placa}</td>
+                        <td>{u.marca}</td>
+                        <td>{u.modelo}</td>
+                        <td>{u.capacidad || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
 
-        {ver.operadores && <section>
-          <h3 className="font-bold text-lg mb-2">👷 Operadores</h3>
-          <table className="w-full text-sm">
-            <thead className="bg-red-900/40"><tr><th>Nombre</th><th>Licencia</th><th>Vencimiento</th><th>Teléfono</th></tr></thead>
-            <tbody>{datos.operadores.map((o: Operador) => <tr key={o.id}><td>{o.nombre}</td><td>{o.licencia||'—'}</td><td>{o.vencimiento?new Date(o.vencimiento).toLocaleDateString('es-MX'):'—'}</td><td>{o.telefono||'—'}</td></tr>)}</tbody>
-          </table>
-        </section>}
+          {seleccion.clientes && (
+            <div>
+              <h4 className="font-bold text-lg border-b border-white/20 pb-1 mb-2">🏢 Clientes ({clientes.length})</h4>
+              {clientes.length === 0 ? (
+                <p className="text-sm text-gray-400">Sin registros</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left"><th>Nombre</th><th>Dirección</th><th>Teléfono</th><th>Coordenadas</th></tr></thead>
+                  <tbody>
+                    {clientes.map((c: any) => (
+                      <tr key={c.id} className="border-t border-white/10">
+                        <td className="py-1">{c.nombre}</td>
+                        <td>{c.direccion || "-"}</td>
+                        <td>{c.telefono || "-"}</td>
+                        <td className="text-xs">{c.latitud ? `${c.latitud}, ${c.longitud}` : "Sin GPS"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
 
+          {seleccion.entregas && (
+            <div>
+              <h4 className="font-bold text-lg border-b border-white/20 pb-1 mb-2">📦 Entregas Reportadas ({entregas.length})</h4>
+              {entregas.length === 0 ? (
+                <p className="text-sm text-gray-400">Sin registros</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left"><th>Fecha</th><th>Operador</th><th>Estado</th><th>Pago</th><th>Observaciones</th></tr></thead>
+                  <tbody>
+                    {entregas.map((e: any, i: number) => (
+                      <tr key={i} className="border-t border-white/10">
+                        <td className="py-1">{e.fecha}</td>
+                        <td>{e.operador}</td>
+                        <td className={e.estado === "Entregado" ? "text-green-400" : "text-yellow-400"}>{e.estado}</td>
+                        <td>{e.pago}</td>
+                        <td className="text-xs">{e.observaciones || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
 
-        {ver.unidades && <section>
-          <h3 className="font-bold text-lg mb-2">🚛 Unidades</h3>
-          <table className="w-full text-sm">
-            <thead className="bg-red-900/40"><tr><th>Placa</th><th>Modelo</th></tr></thead>
-            <tbody>{datos.unidades.map((u: Unidad) => <tr key={u.id}><td>{u.placa}</td><td>{u.modelo}</td></tr>)}</tbody>
-          </table>
-        </section>}
-
-
-        {ver.clientes && <section>
-          <h3 className="font-bold text-lg mb-2">🏢 Clientes</h3>
-          <table className="w-full text-sm">
-            <thead className="bg-red-900/40"><tr><th>Nombre</th><th>Dirección</th><th>Coordenadas</th></tr></thead>
-            <tbody>{datos.clientes.map((c: Cliente) => <tr key={c.id}><td>{c.nombre}</td><td>{c.direccion||'—'}</td><td>{c.lat?`${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}`:'—'}</td></tr>)}</tbody>
-          </table>
-        </section>}
-
-
-        {ver.entregas && <section>
-          <h3 className="font-bold text-lg mb-2">📦 Entregas Reportadas</h3>
-          <table className="w-full text-sm">
-            <thead className="bg-red-900/40"><tr><th>Fecha</th><th>Operador</th><th>Cliente</th><th>Estado</th><th>Obs.</th></tr></thead>
-            <tbody>{datos.entregas.slice().reverse().map((e: Entrega) => {
-              const op = datos.operadores.find((x: Operador) => x.id === e.idOperador);
-              const cli = datos.clientes.find((x: Cliente) => x.id === e.idCliente);
-              return <tr key={e.id}><td>{new Date(e.fecha).toLocaleDateString('es-MX')}</td><td>{op?.nombre||'—'}</td><td>{cli?.nombre||'—'}</td><td>{e.estado}</td><td>{e.observaciones||'—'}</td></tr>;
-            })}</tbody>
-          </table>
-        </section>}
-
-
-        {ver.combustible && <section>
-          <h3 className="font-bold text-lg mb-2">⛽ Combustible</h3>
-          <table className="w-full text-sm">
-            <thead className="bg-red-900/40"><tr><th>Fecha</th><th>Operador</th><th>KM Ini</th><th>KM Fin</th><th>Litros</th><th>Costo</th><th>Rend.</th></tr></thead>
-            <tbody>{datos.combustible.slice().reverse().map((c: Combustible) => {
-              const op = datos.operadores.find((x: Operador) => x.id === c.idOperador);
-              return <tr key={c.id}><td>{new Date(c.fecha).toLocaleDateString('es-MX')}</td><td>{op?.nombre||'—'}</td><td>{c.kmIni}</td><td>{c.kmFin}</td><td>{c.litros}</td><td>${c.costo.toFixed(2)}</td><td>{c.litros>0?((c.kmFin-c.kmIni)/c.litros).toFixed(2):'—'}</td></tr>;
-            })}</tbody>
-          </table>
-        </section>}
+          {seleccion.combustible && (
+            <div>
+              <h4 className="font-bold text-lg border-b border-white/20 pb-1 mb-2">⛽ Combustible ({combustible.length})</h4>
+              {combustible.length === 0 ? (
+                <p className="text-sm text-gray-400">Sin registros</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left"><th>Fecha</th><th>Litros</th><th>Importe</th><th>Km Recorridos</th><th>Rendimiento</th></tr></thead>
+                  <tbody>
+                    {combustible.map((c: any, i: number) => (
+                      <tr key={i} className="border-t border-white/10">
+                        <td className="py-1">{c.fecha}</td>
+                        <td>{c.litros} L</td>
+                        <td>${c.importe}</td>
+                        <td>{parseFloat(c.kmFinal) - parseFloat(c.kmInicial)} km</td>
+                        <td className="font-bold text-green-300">{c.rendimiento} km/L</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* BOTÓN DE IMPRESIÓN */}
+      <button
+        onClick={imprimir}
+        className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded font-bold text-lg"
+      >
+        🖨️ Imprimir Reporte
+      </button>
     </div>
   );
 }

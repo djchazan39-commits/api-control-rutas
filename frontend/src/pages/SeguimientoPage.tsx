@@ -1,66 +1,105 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { useDatos } from "../context/DatosContext";
-import { Operador, Ruta, Cliente } from "../types";
-import L from 'leaflet';
-
 
 export default function SeguimientoPage() {
-  const { datos } = useDatos();
-  const [idOperadorSel, setIdOperadorSel] = useState<number | ''>('');
-  const [mapa, setMapa] = useState<L.Map | null>(null);
-
-
-  useEffect(() => {
-    const m = L.map('mapaSeguimiento').setView([20.6297, -100.4022], 10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
-    setMapa(m);
-    return () => { m.remove() };
-  }, []);
-
+  const { datosApp } = useDatos();
+  const [filtroOperador, setFiltroOperador] = useState("todos");
+  const [entregasFiltradas, setEntregasFiltradas] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!mapa || !idOperadorSel) return;
-    mapa.eachLayer(l => l instanceof L.TileLayer || mapa.removeLayer(l));
-
-
-    const ruta = datos.rutas.find((r: Ruta) => r.idOperador === idOperadorSel);
-    if (ruta) {
-      const coordenadas: [number, number][] = [];
-      ruta.ordenClientes.forEach(idCli => {
-        const cli = datos.clientes.find((c: Cliente) => c.id === idCli);
-        if (cli && cli.lat && cli.lon) {
-          coordenadas.push([cli.lat, cli.lon]);
-          L.marker([cli.lat, cli.lon], { icon: L.divIcon({ html: '📍', className: 'text-2xl' }) })
-            .addTo(mapa).bindPopup(cli.nombre);
-        }
-      });
-      if (coordenadas.length >= 2) {
-        L.polyline(coordenadas, { color: '#b91c1c', weight: 4 }).addTo(mapa);
-        mapa.fitBounds(coordenadas);
-      }
+    let lista = [...datosApp.entregas];
+    if (filtroOperador !== "todos") {
+      lista = lista.filter((e) => e.operador === filtroOperador);
     }
+    setEntregasFiltradas(lista.reverse());
+  }, [datosApp.entregas, filtroOperador]);
 
-
-    const ubicacion = datos.ubicaciones.slice().reverse().find(u => u.idOperador === idOperadorSel);
-    if (ubicacion) {
-      L.marker([ubicacion.lat, ubicacion.lon], { icon: L.divIcon({ html: '🚛', className: 'text-3xl' }) })
-        .addTo(mapa).bindPopup(`Última ubicación: ${new Date(ubicacion.fecha).toLocaleString()}`).openPopup();
-      mapa.setView([ubicacion.lat, ubicacion.lon], 13);
+  const getColorEstado = (estado: string) => {
+    switch (estado?.toLowerCase()) {
+      case "pendiente": return "bg-yellow-700";
+      case "en camino": return "bg-blue-700";
+      case "entregado": return "bg-green-700";
+      case "cancelado": return "bg-red-700";
+      default: return "bg-gray-700";
     }
-  }, [idOperadorSel, mapa, datos]);
+  };
 
+  const puntosConCoords = datosApp.entregas
+    .filter((e) => {
+      const cliente = datosApp.clientes.find((c) => c.id === e.clienteId);
+      return cliente && cliente.latitud && cliente.longitud;
+    })
+    .map((e) => {
+      const cliente = datosApp.clientes.find((c) => c.id === e.clienteId);
+      return { ...e, cliente };
+    });
+
+  const tieneCoordenadas = puntosConCoords.length > 0;
+  const centroLat = tieneCoordenadas ? puntosConCoords[0].cliente.latitud : "20.5888";
+  const centroLng = tieneCoordenadas ? puntosConCoords[0].cliente.longitud : "-100.3899";
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-red-200 mb-4">👀 Seguimiento de Rutas</h2>
-      <select value={idOperadorSel} onChange={e => setIdOperadorSel(Number(e.target.value) || '')}
-        className="w-full p-3 rounded-lg bg-black border border-red-800 mb-4">
-        <option value="">-- Selecciona un operador para ver su ruta y ubicación --</option>
-        {datos.operadores.map((op: Operador) => (
-          <option key={op.id} value={op.id}>{op.nombre}</option>
-        ))}
-      </select>
-      <div id="mapaSeguimiento" className="w-full h-96 rounded-lg border border-red-800"></div>
+      <h2 className="text-xl font-bold text-amber-400 mb-4">👀 Seguimiento de Entregas</h2>
+
+      {/* FILTRO */}
+      <div className="mb-4">
+        <label className="block mb-1 text-sm text-gray-300">Filtrar por Operador:</label>
+        <select
+          value={filtroOperador}
+          onChange={(e) => setFiltroOperador(e.target.value)}
+          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white"
+        >
+          <option value="todos">Todos los operadores</option>
+          {datosApp.operadores.map((op) => (
+            <option key={op.id} value={op.nombre}>{op.nombre}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* LISTA DE ENTREGAS */}
+      <div className="space-y-3 mb-6">
+        {entregasFiltradas.length === 0 ? (
+          <p className="text-gray-400">No hay entregas registradas</p>
+        ) : (
+          entregasFiltradas.map((entrega, i) => {
+            const cliente = datosApp.clientes.find((c) => c.id === entrega.clienteId);
+            return (
+              <div key={i} className="p-3 bg-black/40 rounded border border-gray-600">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-bold">{cliente?.nombre || "Cliente desconocido"}</p>
+                    <p className="text-sm text-gray-300">{cliente?.direccion}</p>
+                    <p className="text-sm">📅 {entrega.fecha} | 🚛 {entrega.operador}</p>
+                    {entrega.observaciones && (
+                      <p className="text-xs text-gray-400 mt-1">📝 {entrega.observaciones}</p>
+                    )}
+                  </div>
+                  <span className={`px-3 py-1 rounded text-sm font-medium ${getColorEstado(entrega.estado)}`}>
+                    {entrega.estado || "Pendiente"}
+                  </span>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* 🗺️ MAPA DE SEGUIMIENTO */}
+      <div className="mt-4 p-3 bg-black/50 rounded border border-blue-400">
+        <h4 className="font-bold mb-2">🗺️ Mapa de Ubicaciones</h4>
+        <iframe
+          title="Mapa de Seguimiento"
+          width="100%"
+          height="380"
+          style={{ border: 0, borderRadius: "8px" }}
+          src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3008.32!2d${centroLng}!3d${centroLat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85d347d47d12345%3A0xabc123def!2sQuer%C3%A9taro!5e0!3m2!1ses!2smx!4v${Date.now()}`}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        ></iframe>
+        <p className="text-xs text-gray-400 mt-2">📍 El mapa muestra la zona de entregas. Agrega coordenadas a los clientes para ver su ubicación exacta.</p>
+      </div>
     </div>
   );
 }
