@@ -1,104 +1,102 @@
 import { useState, useEffect } from "react";
+import { Link, Navigate } from "react-router-dom";
 import { useDatos } from "../context/DatosContext";
+import L from "leaflet";
+
 
 export default function SeguimientoPage() {
-  const { datosApp } = useDatos();
-  const [filtroOperador, setFiltroOperador] = useState("todos");
-  const [entregasFiltradas, setEntregasFiltradas] = useState<any[]>([]);
+  const { usuarioActivo, datosApp, cerrarSesion } = useDatos();
+  const [idOperadorSel, setIdOperadorSel] = useState<number | ''>('');
+  const [mapa, setMapa] = useState<L.Map | null>(null);
+
+
+  if (!usuarioActivo) return <Navigate to="/" replace />;
+
 
   useEffect(() => {
-    let lista = [...datosApp.entregas];
-    if (filtroOperador !== "todos") {
-      lista = lista.filter((e) => e.operador === filtroOperador);
+    const m = L.map('mapaSeguimiento').setView([20.6297, -100.4022], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
+    setMapa(m);
+    return () => { m.remove() };
+  }, []);
+
+
+  useEffect(() => {
+    if (!mapa) return;
+    mapa.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) mapa.removeLayer(l); });
+
+    const clientes = datosApp?.clientes || [];
+    const rutas = datosApp?.rutas || [];
+    const puntos: [number, number][] = []; // ✅ Declarada aquí arriba
+
+
+    if (idOperadorSel === '') {
+      clientes.forEach(c => {
+        if ((c as any).latitud && (c as any).longitud) {
+          const lat = parseFloat((c as any).latitud);
+          const lng = parseFloat((c as any).longitud);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            L.marker([lat, lng]).addTo(mapa).bindPopup(`<b>${c.nombre}</b><br>${c.direccion||''}`);
+          }
+        }
+      });
+      return;
     }
-    setEntregasFiltradas(lista.reverse());
-  }, [datosApp.entregas, filtroOperador]);
 
-  const getColorEstado = (estado: string) => {
-    switch (estado?.toLowerCase()) {
-      case "pendiente": return "bg-yellow-700";
-      case "en camino": return "bg-blue-700";
-      case "entregado": return "bg-green-700";
-      case "cancelado": return "bg-red-700";
-      default: return "bg-gray-700";
+
+    const ruta = rutas.find((r: any) => String(r.operadorId) === String(idOperadorSel));
+    if (ruta) {
+      ruta.ordenClientes?.forEach((idCli: number) => {
+        const c = clientes.find((cli: any) => cli.id === idCli);
+        if (c && (c as any).latitud && (c as any).longitud) {
+          const lat = parseFloat((c as any).latitud);
+          const lng = parseFloat((c as any).longitud);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            puntos.push([lat, lng]);
+            L.marker([lat, lng]).addTo(mapa).bindPopup(`<b>${c.nombre}</b><br>Orden: ${puntos.length}`);
+          }
+        }
+      });
+
+      // ✅ Ahora sí está dentro del mismo bloque donde existe "puntos"
+      if (puntos.length > 0) {
+        L.polyline(puntos, { color: 'red', weight: 4 }).addTo(mapa);
+        mapa.fitBounds(puntos);
+      }
     }
-  };
+  }, [mapa, idOperadorSel, datosApp]);
 
-  const puntosConCoords = datosApp.entregas
-    .filter((e) => {
-      const cliente = datosApp.clientes.find((c) => c.id === e.clienteId);
-      return cliente && cliente.latitud && cliente.longitud;
-    })
-    .map((e) => {
-      const cliente = datosApp.clientes.find((c) => c.id === e.clienteId);
-      return { ...e, cliente };
-    });
-
-  const tieneCoordenadas = puntosConCoords.length > 0;
-  const centroLat = tieneCoordenadas ? puntosConCoords[0].cliente.latitud : "20.5888";
-  const centroLng = tieneCoordenadas ? puntosConCoords[0].cliente.longitud : "-100.3899";
 
   return (
-    <div>
-      <h2 className="text-xl font-bold text-amber-400 mb-4">👀 Seguimiento de Entregas</h2>
-
-      {/* FILTRO */}
-      <div className="mb-4">
-        <label className="block mb-1 text-sm text-gray-300">Filtrar por Operador:</label>
-        <select
-          value={filtroOperador}
-          onChange={(e) => setFiltroOperador(e.target.value)}
-          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white"
-        >
-          <option value="todos">Todos los operadores</option>
-          {datosApp.operadores.map((op) => (
-            <option key={op.id} value={op.nombre}>{op.nombre}</option>
-          ))}
-        </select>
+    <div className="min-h-screen bg-gradient-to-b from-black to-red-950 text-white p-6">
+      <div className="text-center mb-6">
+        <img src="/logo.png" alt="Logotipo" className="mx-auto h-24 w-auto object-contain mb-2" />
+        <h2 className="text-xl font-bold text-red-200">👀 Seguimiento de Rutas</h2>
       </div>
 
-      {/* LISTA DE ENTREGAS */}
-      <div className="space-y-3 mb-6">
-        {entregasFiltradas.length === 0 ? (
-          <p className="text-gray-400">No hay entregas registradas</p>
-        ) : (
-          entregasFiltradas.map((entrega, i) => {
-            const cliente = datosApp.clientes.find((c) => c.id === entrega.clienteId);
-            return (
-              <div key={i} className="p-3 bg-black/40 rounded border border-gray-600">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-bold">{cliente?.nombre || "Cliente desconocido"}</p>
-                    <p className="text-sm text-gray-300">{cliente?.direccion}</p>
-                    <p className="text-sm">📅 {entrega.fecha} | 🚛 {entrega.operador}</p>
-                    {entrega.observaciones && (
-                      <p className="text-xs text-gray-400 mt-1">📝 {entrega.observaciones}</p>
-                    )}
-                  </div>
-                  <span className={`px-3 py-1 rounded text-sm font-medium ${getColorEstado(entrega.estado)}`}>
-                    {entrega.estado || "Pendiente"}
-                  </span>
-                </div>
-              </div>
-            );
-          })
-        )}
+
+      <div className="max-w-5xl mx-auto bg-black/40 p-6 rounded-xl border border-red-500/30">
+        <div className="mb-4">
+          <label className="block text-sm text-gray-300 mb-1">Seleccionar Operador</label>
+          <select
+            value={idOperadorSel}
+            onChange={e => setIdOperadorSel(e.target.value ? Number(e.target.value) : '')}
+            className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white"
+          >
+            <option value="">— Ver todos los clientes —</option>
+            {datosApp?.operadores?.map((op: any) => (
+              <option key={op.id} value={op.id}>{op.nombre}</option>
+            ))}
+          </select>
+        </div>
+
+        <div id="mapaSeguimiento" className="w-full h-[500px] rounded-lg border border-white/20"></div>
       </div>
 
-      {/* 🗺️ MAPA DE SEGUIMIENTO */}
-      <div className="mt-4 p-3 bg-black/50 rounded border border-blue-400">
-        <h4 className="font-bold mb-2">🗺️ Mapa de Ubicaciones</h4>
-        <iframe
-          title="Mapa de Seguimiento"
-          width="100%"
-          height="380"
-          style={{ border: 0, borderRadius: "8px" }}
-          src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3008.32!2d${centroLng}!3d${centroLat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85d347d47d12345%3A0xabc123def!2sQuer%C3%A9taro!5e0!3m2!1ses!2smx!4v${Date.now()}`}
-          allowFullScreen
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        ></iframe>
-        <p className="text-xs text-gray-400 mt-2">📍 El mapa muestra la zona de entregas. Agrega coordenadas a los clientes para ver su ubicación exacta.</p>
+
+      <div className="text-center mt-8 space-x-4">
+        <Link to="/dashboard" className="inline-block bg-gray-700/70 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold">← Volver al Menú</Link>
+        <button onClick={cerrarSesion} className="bg-red-800/70 hover:bg-red-700 px-6 py-3 rounded-lg font-bold">🚪 Cerrar Sesión</button>
       </div>
     </div>
   );

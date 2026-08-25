@@ -26,6 +26,7 @@ export interface Cliente {
   id: number;
   nombre: string;
   direccion?: string;
+  telefono?: string;   // ✅ AGREGA ESTA LÍNEA
   lat: number;
   lon: number;
 }

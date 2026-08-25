@@ -1,96 +1,50 @@
-import { useState } from "react";
+import { Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useDatos } from "../context/DatosContext";
 
 export default function RespaldoPage() {
-  const { datosApp, setDatosApp, guardarCambios } = useDatos();
-  const [mensaje, setMensaje] = useState("");
+  const { usuarioActivo, datosApp, cerrarSesion } = useDatos();
 
-  const descargarRespaldo = () => {
-    if (!datosApp) { alert("No hay datos para respaldar"); return; }
-    const archivo = new Blob([JSON.stringify(datosApp, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(archivo);
-    const enlace = document.createElement("a");
-    enlace.href = url;
-    enlace.download = `respaldo-rutas-${new Date().toLocaleDateString().replace(/\//g,"-")}.json`;
-    enlace.click();
+  if (!usuarioActivo || usuarioActivo.rol !== "administrador") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  function descargar() {
+    const blob = new Blob([JSON.stringify(datosApp, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `respaldo-rutas-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
     URL.revokeObjectURL(url);
-    setMensaje("✅ Respaldo descargado correctamente");
-    setTimeout(() => setMensaje(""), 4000);
-  };
-
-  const restaurarRespaldo = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const archivo = e.target.files?.[0];
-    if (!archivo) return;
-    const lector = new FileReader();
-    lector.onload = (evento) => {
-      try {
-        const datosRestaurados = JSON.parse(evento.target?.result as string);
-        if (!confirm("⚠️ Esto reemplazará TODOS los datos actuales. ¿Continuar?")) return;
-        setDatosApp(datosRestaurados);
-        guardarCambios();
-        setMensaje("✅ Datos restaurados y sincronizados correctamente");
-        setTimeout(() => setMensaje(""), 4000);
-      } catch {
-        alert("❌ El archivo no es válido");
-      }
-    };
-    lector.readAsText(archivo);
-  };
+  }
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4 text-white">💾 Respaldo y Sincronización</h2>
+    <div className="min-h-screen bg-gradient-to-b from-black to-red-950 text-white p-6">
+      <div className="text-center mb-6">
+        <img src="/logo.png" alt="Logotipo" className="mx-auto h-24 w-auto object-contain mb-2" />
+        <h2 className="text-xl font-bold text-red-200">💾 Respaldo de Información</h2>
+      </div>
 
-      {mensaje && (
-        <div className="mb-4 p-3 bg-green-900/50 border border-green-400 rounded text-center font-bold">
-          {mensaje}
-        </div>
-      )}
-
-      <div className="space-y-4">
-        {/* DESCARGA DE RESPALDO */}
-        <div className="p-4 bg-black/40 rounded border border-white/10">
-          <h3 className="font-bold text-lg mb-2">⬇️ Descargar Respaldo Completo</h3>
-          <p className="text-sm text-gray-300 mb-3">
-            Descarga TODA la base de datos en un archivo seguro (.json). Incluye usuarios, operadores, unidades, clientes, rutas, entregas y combustible.
-          </p>
-          <button
-            onClick={descargarRespaldo}
-            className="w-full bg-green-600 hover:bg-green-700 py-3 rounded font-bold"
-          >
-            💾 Descargar Copia de Seguridad
-          </button>
-        </div>
-
-        {/* RESTAURAR RESPALDO */}
-        <div className="p-4 bg-black/40 rounded border border-white/10">
-          <h3 className="font-bold text-lg mb-2">⬆️ Restaurar desde Archivo</h3>
-          <p className="text-sm text-yellow-300 mb-3">
-            ⚠️ Al restaurar, TODOS los datos actuales se reemplazarán por los del archivo seleccionado.
-          </p>
-          <label className="block w-full cursor-pointer">
-            <div className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded font-bold text-center">
-              📂 Seleccionar Archivo de Respaldo (.json)
-            </div>
-            <input
-              type="file"
-              accept=".json"
-              onChange={restaurarRespaldo}
-              className="hidden"
-            />
-          </label>
-        </div>
-
-        {/* INFORMACIÓN DE SINCRONIZACIÓN */}
-        <div className="p-4 bg-black/40 rounded border border-blue-500/50">
-          <h3 className="font-bold text-lg mb-2">🌐 Información de Conexión</h3>
-          <ul className="text-sm space-y-1 text-gray-300">
-            <li>🟦 Datos sincronizados centralmente</li>
-            <li>📂 Guardado automático en almacenamiento local</li>
-            <li>🔄 Compatible con servidor central</li>
-            <li>📱 Funciona en navegador y dispositivos móviles</li>
+      <div className="max-w-2xl mx-auto bg-black/40 p-6 rounded-xl border border-red-500/30 text-center">
+        <p className="text-lg text-gray-300 mb-6">Crea una copia de seguridad con toda la información del sistema</p>
+        <button onClick={descargar} className="px-8 py-4 bg-green-700 hover:bg-green-600 rounded-lg text-xl font-bold">⬇️ Descargar Respaldo</button>
+        <div className="mt-6 text-left p-4 bg-white/5 rounded-lg">
+          <p className="text-sm text-gray-400 mb-2">📋 Información incluida:</p>
+          <ul className="text-sm text-gray-300 space-y-1">
+            <li>👤 {datosApp?.usuarios?.length || 0} Usuarios</li>
+            <li>👷 {datosApp?.operadores?.length || 0} Operadores</li>
+            <li>🚛 {datosApp?.unidades?.length || 0} Unidades</li>
+            <li>🏢 {datosApp?.clientes?.length || 0} Clientes</li>
+            <li>📍 {datosApp?.rutas?.length || 0} Rutas</li>
+            <li>⛽ {datosApp?.combustible?.length || 0} Registros de combustible</li>
           </ul>
         </div>
+      </div>
+
+      <div className="text-center mt-8 space-x-4">
+        <Link to="/dashboard" className="inline-block bg-gray-700/70 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold">← Volver al Menú</Link>
+        <button onClick={cerrarSesion} className="bg-red-800/70 hover:bg-red-700 px-6 py-3 rounded-lg font-bold">🚪 Cerrar Sesión</button>
       </div>
     </div>
   );

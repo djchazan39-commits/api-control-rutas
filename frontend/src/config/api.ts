@@ -1,9 +1,5 @@
-// ✅ ANTES (solo para pruebas locales):
-// const API = 'http://localhost:3000/api';
-
 // ✅ AHORA (tu servidor central):
 const API = 'https://sierra-queretaro.onrender.com/api';
-
 
 export async function cargarDatos() {
   try {
@@ -36,6 +32,6 @@ export async function cargarDatos() {
     combustible: [],
     ubicaciones: []
   };
-}
+};
 
 export { API };

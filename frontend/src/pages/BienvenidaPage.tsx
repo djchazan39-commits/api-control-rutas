@@ -3,41 +3,41 @@ import { useNavigate } from "react-router-dom";
 
 export default function BienvenidaPage() {
   const navegar = useNavigate();
-  const [progreso, setProgreso] = useState(0);
+  const [cargando, setCargando] = useState(0);
 
   useEffect(() => {
-    const temporizador = setInterval(() => {
-      setProgreso(anterior => {
-        if (anterior >= 100) {
-          clearInterval(temporizador);
-          setTimeout(() => navegar("/dashboard"), 600);
+    const intervalo = setInterval(() => {
+      setCargando(prev => {
+        if (prev >= 100) {
+          clearInterval(intervalo);
+          setTimeout(() => navegar("/dashboard"), 500);
           return 100;
         }
-        return anterior + 2;
+        return prev + 2;
       });
     }, 80);
-    return () => clearInterval(temporizador);
+    return () => clearInterval(intervalo);
   }, [navegar]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-red-950 to-red-900 flex flex-col items-center justify-center p-6">
-      <img src="/logo.png" alt="Grupo Sierra" className="w-36 h-36 object-contain mb-8 drop-shadow-lg"
-        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-      
-      {/* ✅ EL MENSAJE EXACTO QUE PEDISTE */}
-      <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-3">
-        ¡Bienvenido!
-      </h1>
-      <p className="text-lg md:text-xl text-amber-300 text-center mb-8 max-w-md">
-        Estás ingresando al Sistema de Control de Rutas de Grupo Sierra
-      </p>
+    <div className="min-h-screen bg-gradient-to-t from-red-900 via-red-950 to-black flex flex-col items-center justify-center p-6">
+      <div className="text-center">
+        <img src="/logo.png" alt="Logotipo" className="mx-auto h-32 w-auto mb-8" />
+        
+        <h1 className="text-3xl font-bold text-white mb-4">¡Bienvenido!</h1>
+        <p className="text-xl text-red-200 mb-8">Estás ingresando al Sistema de Control de Rutas de Grupo Sierra Querétaro</p>
 
-      {/* ✅ BARRA QUE SIMULA LA CARGA */}
-      <div className="w-full max-w-xs bg-white/20 rounded-full h-3 overflow-hidden mb-4">
-        <div className="h-full bg-amber-400 transition-all duration-100 ease-linear rounded-full"
-          style={{ width: `${progreso}%` }} />
+        {/* BARRA DE CARGA */}
+        <div className="w-80 mx-auto bg-black/50 rounded-full h-6 border border-red-500/30 overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-red-700 to-red-500 transition-all duration-200 flex items-center justify-center"
+            style={{ width: `${cargando}%` }}
+          >
+            {cargando > 15 && <span className="text-xs font-bold text-white">{cargando}%</span>}
+          </div>
+        </div>
+        <p className="text-gray-300 mt-4">Cargando sistema...</p>
       </div>
-      <p className="text-white text-sm">Cargando... {progreso}%</p>
     </div>
   );
 }

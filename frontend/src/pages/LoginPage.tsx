@@ -1,60 +1,83 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-// ✅ SIN .tsx al final — ESTA ES LA ÚNICA LÍNEA QUE CAMBIA
 import { useDatos } from "../context/DatosContext";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
-  const navegar = useNavigate();
   const { iniciarSesion } = useDatos();
+  const navegar = useNavigate();
   const [credenciales, setCredenciales] = useState({ nick: "", pass: "" });
   const [error, setError] = useState("");
 
-  const manejarEntrar = () => {
+  const entrar = () => {
+    setError("");
+    if (!credenciales.nick.trim() || !credenciales.pass.trim()) {
+      setError("⚠️ Escribe usuario y contraseña");
+      return;
+    }
     if (iniciarSesion(credenciales.nick, credenciales.pass)) {
       navegar("/bienvenida");
     } else {
-      setError("⚠️ Usuario o contraseña incorrectos");
+      setError("❌ Usuario o contraseña incorrectos");
     }
   };
 
+  const manejarEnter = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") entrar();
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-red-950 to-red-900 flex flex-col items-center justify-center p-6">
-      <h1 className="text-3xl font-bold text-white mb-8">Grupo Sierra</h1>
-      <div className="w-full max-w-sm bg-black/50 p-6 rounded-lg border border-white/20">
-        <h2 className="text-xl text-white mb-6 text-center">Iniciar Sesión</h2>
-        
-        {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+    <div className="min-h-screen bg-gradient-to-t from-red-900 via-red-950 to-black flex flex-col items-center justify-center p-6">
+      {/* LOGO */}
+      <div className="text-center mb-8">
+        <img src="/logo.png" alt="Logotipo de la Empresa" className="mx-auto h-28 w-auto object-contain mb-3" />
+        <h1 className="text-2xl font-bold text-white">Sistema de Control de Rutas</h1>
+        <p className="text-red-200">Grupo Sierra Querétaro</p>
+      </div>
+
+      {/* FORMULARIO */}
+      <div className="w-full max-w-md bg-black/40 p-6 rounded-xl border border-red-500/30">
+        <h2 className="text-xl font-bold text-center text-white mb-6">Iniciar Sesión</h2>
+
+        {error && <p className="text-amber-300 text-center mb-4">{error}</p>}
 
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-gray-300 mb-1">Usuario</label>
             <input
+              id="campo_usuario"
               type="text"
               value={credenciales.nick}
               onChange={(e) => setCredenciales({ ...credenciales, nick: e.target.value })}
-              onKeyDown={(e) => e.key === "Enter" && document.getElementById("campo_pass")?.focus()}
-              className="w-full px-3 py-2 bg-white/20 rounded border border-white/30 text-white"
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  document.getElementById("campo_clave")?.focus();
+                }
+              }}
+              className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
               placeholder="Escribe tu usuario"
+              autoFocus
             />
           </div>
+
           <div>
             <label className="block text-sm text-gray-300 mb-1">Contraseña</label>
             <input
-              id="campo_pass"
+              id="campo_clave"
               type="password"
               value={credenciales.pass}
               onChange={(e) => setCredenciales({ ...credenciales, pass: e.target.value })}
-              onKeyDown={(e) => e.key === "Enter" && manejarEntrar()}
-              className="w-full px-3 py-2 bg-white/20 rounded border border-white/30 text-white"
+              onKeyDown={manejarEnter}
+              className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
               placeholder="Escribe tu contraseña"
             />
           </div>
-          
+
           <button
-            onClick={manejarEntrar}
-            className="w-full py-2 bg-green-600 hover:bg-green-700 rounded font-medium text-white mt-2"
+            onClick={entrar}
+            className="w-full py-3 bg-red-700 hover:bg-red-600 text-white font-bold rounded-lg transition-colors"
           >
-            Ingresar
+            ✅ Ingresar
           </button>
         </div>
       </div>
