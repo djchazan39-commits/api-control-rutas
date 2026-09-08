@@ -3,14 +3,11 @@ import { Link, Navigate } from "react-router-dom";
 import { useDatos } from "../context/DatosContext";
 import L from "leaflet";
 
-
 // ✅ ZONAS PARA RUTAS
 const ZONAS_RUTAS = ["CDMX", "MORELIA", "LEÓN", "FORÁNEO", "QUERÉTARO", "LOCAL"];
 
-
 // ✅ Coordenadas por defecto (centro de Querétaro)
-const CENTRO_QRO: [number, number] = [20.6297, -100.4022];
-
+const GRUPO_SIERRA_QUERETARO: [number, number] = [20.639827, -100.496519];
 
 export default function RutasPage() {
   const { usuarioActivo, datosApp, setDatosApp, guardarCambios, cerrarSesion } = useDatos();
@@ -32,6 +29,15 @@ export default function RutasPage() {
   });
   const [mapaListo, setMapaListo] = useState(false);
 
+  // ✅ MANEJAR TECLA ENTER — salta al siguiente campo o GUARDA al final
+  const manejarEnter = (e: React.KeyboardEvent, siguienteId: string | null) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      siguienteId 
+        ? document.getElementById(siguienteId)?.focus() 
+        : guardar(); // ← En el último campo, Enter = Guardar
+    }
+  };
 
   // ✅ Inicializar mapa cuando se abre el formulario
   useEffect(() => {
@@ -40,7 +46,7 @@ export default function RutasPage() {
         const contenedor = document.getElementById("mapa-ruta-previo");
         if (contenedor && !contenedor.dataset.iniciado) {
           contenedor.dataset.iniciado = "si";
-          const mapa = L.map("mapa-ruta-previo").setView(CENTRO_QRO, 11);
+          const mapa = L.map("mapa-ruta-previo").setView(GRUPO_SIERRA_QUERETARO, 11);
           L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenStreetMap"
           }).addTo(mapa);
@@ -50,7 +56,6 @@ export default function RutasPage() {
       }, 150);
     }
   }, [modo, mapaListo]);
-
 
   // ✅ Dibujar ruta cada vez que cambian los clientes seleccionados
   useEffect(() => {
@@ -64,39 +69,30 @@ export default function RutasPage() {
     });
 
     const puntos: [number, number][] = [];
-
-    // Dibujar cada cliente en orden
-    form.ordenClientes.forEach((idCliente, indice) => {
-      const cliente = clientes.find((c: any) => c.id === idCliente);
-     if (cliente && (cliente as any).latitud && (cliente as any).longitud) {
-  const lat = parseFloat((cliente as any).latitud);
-  const lng = parseFloat((cliente as any).longitud);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          puntos.push([lat, lng]);
-          L.marker([lat, lng])
-            .addTo(mapa)
-            .bindPopup(`<b>${indice + 1}. ${cliente.nombre}</b><br>${cliente.direccion || ""}`);
-        }
-      }
-    });
-
+   // Dibujar cada cliente en orden
+form.ordenClientes.forEach((idCliente) => {
+  const cliente = clientes.find((c: any) => c.id === idCliente);
+  if (cliente && (cliente as any).latitud && (cliente as any).longitud) {
+    const lat = parseFloat((cliente as any).latitud);
+    const lng = parseFloat((cliente as any).longitud);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      puntos.push([lat, lng]);
+      L.marker([lat, lng])
+        .addTo(mapa)
+        .bindPopup(`<b>${cliente.nombre}</b><br>${(cliente as any).direccion || ""}`);
+    }
+  }
+});
     // ✅ Dibujar línea de recorrido
-    if (puntos.length >= 2) {
-      L.polyline(puntos, { color: "#ef4444", weight: 4, opacity: 0.8 }).addTo(mapa);
-      mapa.fitBounds(puntos, { padding: [30, 30] });
-    } else if (puntos.length === 1) {
-      mapa.setView(puntos[0], 13);
+    if (puntos.length > 0) {
+      L.polyline(puntos, {
+        color: 'red',
+        weight: 4,
+        opacity: 0.8
+      }).addTo(mapa);
+      mapa.fitBounds(puntos);
     }
   }, [form.ordenClientes, modo, mapaListo, clientes]);
-
-
-  const manejarEnter = (e: React.KeyboardEvent, siguienteId: string | null) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      siguienteId ? document.getElementById(siguienteId)?.focus() : guardar();
-    }
-  };
-
 
   const limpiar = () => {
     setForm({ nombre: "", zona: "", operadorId: "", unidadId: "", ordenClientes: [] });
@@ -104,7 +100,6 @@ export default function RutasPage() {
     setModo("lista");
     setMapaListo(false);
   };
-
 
   // ✅ Agregar o quitar cliente del recorrido
   const toggleCliente = (idCliente: number) => {
@@ -116,7 +111,6 @@ export default function RutasPage() {
         : [...p.ordenClientes, idCliente]
     }));
   };
-
 
   // ✅ Subir o bajar posición de un cliente en la ruta
   const moverCliente = (idCliente: number, direccion: "arriba" | "abajo") => {
@@ -132,30 +126,28 @@ export default function RutasPage() {
     setForm(p => ({ ...p, ordenClientes: nuevaLista }));
   };
 
-
   const guardar = () => {
     if (!form.nombre.trim() || !form.operadorId || !form.unidadId) {
       alert("⚠️ Completa Nombre, Operador y Unidad");
       return;
     }
     if (editandoId) {
-   setDatosApp({
-  ...datosApp,
-  rutas: lista.map((r: any) =>
-    r.id === editandoId ? { ...r, ...form, fechaCreacion: r.fechaCreacion } : r
-  )
-});
-} else {
-  setDatosApp({
-    ...datosApp,
-   rutas: [...lista, { ...form, id: Date.now(), fechaCreacion: new Date().toLocaleDateString() } as any]
-  });
-}
+      setDatosApp({
+        ...datosApp,
+        rutas: lista.map((r: any) =>
+          r.id === editandoId ? { ...r, ...form, fechaCreacion: r.fechaCreacion } : r
+        )
+      });
+    } else {
+      setDatosApp({
+        ...datosApp,
+        rutas: [...lista, { ...form, id: Date.now(), fechaCreacion: new Date().toLocaleDateString() } as any]
+      });
+    }
     guardarCambios();
     limpiar();
     alert("✅ Ruta guardada correctamente");
   };
-
 
   const editar = (r: any) => {
     setEditandoId(r.id);
@@ -170,13 +162,11 @@ export default function RutasPage() {
     setMapaListo(false);
   };
 
-
   const eliminar = (id: number) => {
     if (!confirm("¿Eliminar esta ruta?")) return;
     setDatosApp({ ...datosApp, rutas: lista.filter((r: any) => r.id !== id) });
     guardarCambios();
   };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-t from-red-900 via-red-950 to-black p-6">
@@ -188,11 +178,9 @@ export default function RutasPage() {
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="max-w-4xl mx-auto bg-black/40 p-6 rounded-xl border border-red-500/30">
-
         {modo === "lista" ? (
           <>
             <button onClick={() => setModo("form")} className="mb-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white font-bold">➕ Nueva Ruta</button>
-            
             {lista.length === 0 ? (
               <p className="text-amber-300">Sin rutas registradas</p>
             ) : (
@@ -270,6 +258,7 @@ export default function RutasPage() {
                   id="campo_un_ruta"
                   value={form.unidadId}
                   onChange={(e) => setForm({ ...form, unidadId: e.target.value })}
+                  onKeyDown={(e) => manejarEnter(e, null)} // ← Último campo: Enter = GUARDAR
                   className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white"
                 >
                   <option value="">Selecciona...</option>

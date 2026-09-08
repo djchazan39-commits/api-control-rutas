@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { DatosApp, UsuarioActivo } from "../types";
 import { cargarDatos, API } from "../config/api";
 
-
 interface ContextoDatos {
   datosApp: DatosApp;
   setDatosApp: React.Dispatch<React.SetStateAction<DatosApp>>;
@@ -12,11 +11,9 @@ interface ContextoDatos {
   cerrarSesion: () => void;
 }
 
-
 const DatosContext = createContext<ContextoDatos | undefined>(undefined);
 
-
-// 🔹 USUARIO ADMINISTRADOR FIJO (NUNCA SE BORRA)
+// 🔹 USUARIO ADMINISTRADOR FIJO (NUNCA SE BORRA NI SE PIERDE CONTRASEÑA)
 const adminFijo = {
   id: 1,
   nombre: "Administrador",
@@ -24,7 +21,6 @@ const adminFijo = {
   nick: "admin",
   pass: "admin1530"
 };
-
 
 export function DatosProvider({ children }: { children: ReactNode }) {
   const [datosApp, setDatosApp] = useState<DatosApp>({
@@ -39,12 +35,11 @@ export function DatosProvider({ children }: { children: ReactNode }) {
   });
   const [usuarioActivo, setUsuarioActivo] = useState<UsuarioActivo | null>(null);
 
-
   useEffect(() => {
     const cargar = async () => {
       const datosCargados = await cargarDatos();
       if (datosCargados) {
-        // ✅ Asegurar que el admin fijo siempre exista
+        // ✅ Asegurar que el admin fijo SIEMPRE exista y con su contraseña correcta
         const sinAdmin = datosCargados.usuarios.filter(u => u.id !== 1);
         datosCargados.usuarios = [adminFijo, ...sinAdmin];
         setDatosApp(datosCargados);
@@ -56,7 +51,6 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     };
     cargar();
   }, []);
-
 
   const iniciarSesion = (nick: string, pass: string): boolean => {
     const usuario = datosApp.usuarios.find(u => u.nick === nick && u.pass === pass);
@@ -74,26 +68,31 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
-
   const cerrarSesion = () => {
     localStorage.removeItem("usuarioActivo");
     setUsuarioActivo(null);
   };
 
+  const guardarCambios = async () => {
+    try {
+      // ✅ ANTES DE GUARDAR: Asegurar que el admin SIEMPRE tenga su contraseña correcta
+      const datosAGuardar = { ...datosApp };
+      const sinAdmin = datosAGuardar.usuarios.filter(u => u.id !== 1);
+      datosAGuardar.usuarios = [adminFijo, ...sinAdmin];
 
- const guardarCambios = async () => {
-  localStorage.setItem("datosApp", JSON.stringify(datosApp));
-  try {
-    await fetch(API + '/datos', {  // ✅ Usa la variable API importada
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(datosApp)
-    });
-  } catch {
-    console.log("✅ Guardado en localStorage");
-  }
-};
-
+      // ✅ Enviar al SERVIDOR CENTRAL
+      await fetch(API + '/datos', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datosAGuardar)
+      });
+      console.log("✅ Guardado en SERVIDOR CENTRAL");
+    } catch (error) {
+      // ✅ Si no hay internet, guarda en respaldo local
+      localStorage.setItem("datosApp", JSON.stringify(datosApp));
+      console.log("⚠️ Guardado temporal en el dispositivo");
+    }
+  };
 
   return (
     <DatosContext.Provider value={{
@@ -108,7 +107,6 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     </DatosContext.Provider>
   );
 }
-
 
 // ✅ HOOK CORREGIDO
 export function useDatos() {
