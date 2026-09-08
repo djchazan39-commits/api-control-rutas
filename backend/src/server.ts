@@ -4,28 +4,22 @@ import dotenv from 'dotenv';
 import { pool, testConnection } from './config/db';
 
 dotenv.config();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// ✅ CAMBIE ESTA LÍNEA — PERMITE DESDE CUALQUIER LUGAR
+app.use(cors({ origin: "*" }));
+
 app.use(express.json());
 
-// ========== VERIFICAR TABLAS (YA NO BORRA NADA) ==========
+// ========== VERIFICAR TABLAS ==========
 async function crearTablas() {
   try {
     console.log('✅ Tablas ya verificadas');
-    // Las tablas ya están creadas y bien estructuradas
-    // Ya no se borran automáticamente
   } catch (err) {
     console.error('❌ Error:', err);
   }
-}
-
-// ========== INICIO DEL SERVIDOR ==========
-async function iniciar() {
-  await testConnection();
-  await crearTablas();
-  app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
 }
 
 // ========== LEER TODOS LOS DATOS ==========
@@ -154,5 +148,11 @@ app.post('/api/datos', async (req, res) => {
   }
 });
 
-// ========== INICIAR APLICACIÓN ==========
+// ========== INICIO DEL SERVIDOR ==========
+async function iniciar() {
+  await testConnection();
+  await crearTablas();
+  app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
+}
+
 iniciar();
