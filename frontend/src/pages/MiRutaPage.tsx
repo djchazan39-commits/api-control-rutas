@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Navigate, Link } from "react-router-dom";
 import { useDatos } from "../context/DatosContext";
-// ✅ Importamos Leaflet para el mapa
 import L from "leaflet";
 
 export default function MiRutaPage() {
@@ -13,32 +12,30 @@ export default function MiRutaPage() {
 
   // ✅ BUSCAR RUTA ASIGNADA AL OPERADOR
   useEffect(() => {
-    // Reiniciar mapa cuando cambie la ruta
     setMapaCargado(false);
-
-    let ruta = datosApp.rutas.find((r: any) => 
+    // ✅ CORREGIDO: datosApp?.rutas con signo de interrogación
+    let ruta = datosApp?.rutas?.find((r: any) => 
       String(r.operadorId) === String(usuarioActivo.id)
     );
     // Si no es operador y no tiene ruta asignada, muestra la primera
     if (!ruta && usuarioActivo.rol !== "operador") {
-      ruta = datosApp.rutas[0];
+      ruta = datosApp?.rutas?.[0];
     }
     setRutaAsignada(ruta || null);
-  }, [datosApp.rutas, usuarioActivo]);
+  }, [datosApp?.rutas, usuarioActivo]);
 
   // ✅ OBTENER CLIENTES EN ORDEN
   const clientesOrdenados = rutaAsignada?.ordenClientes?.map((id: number) =>
-    datosApp.clientes.find((c: any) => c.id === id)
+    datosApp?.clientes?.find((c: any) => c.id === id)
   ).filter(Boolean) || [];
 
   // ✅ DIBUJAR EL MAPA Y LA LÍNEA DE RUTA
   useEffect(() => {
     if (clientesOrdenados.length === 0 || mapaCargado) return;
 
-    // ✅ CORREGIDO: usamos "latitud" y "longitud" como están guardados
     const puntos: [number, number][] = [];
     clientesOrdenados.forEach((cliente: any) => {
-      if (cliente.latitud && cliente.longitud) {
+      if (cliente?.latitud && cliente?.longitud) {
         const lat = parseFloat(cliente.latitud);
         const lng = parseFloat(cliente.longitud);
         if (!isNaN(lat) && !isNaN(lng)) {
@@ -52,19 +49,15 @@ export default function MiRutaPage() {
       return;
     }
 
-    // ✅ Crear mapa
     const contenedor = document.getElementById("mapa-mi-ruta");
     if (!contenedor) return;
 
-    // Limpiar si ya existía
     contenedor.innerHTML = "";
-
     const mapa = L.map("mapa-mi-ruta").setView(puntos[0], 12);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap"
     }).addTo(mapa);
 
-    // ✅ Dibujar la línea de la ruta
     if (puntos.length > 1) {
       L.polyline(puntos, {
         color: "red",
@@ -73,7 +66,6 @@ export default function MiRutaPage() {
       }).addTo(mapa);
     }
 
-    // ✅ Colocar marcadores en cada punto
     puntos.forEach((punto, i) => {
       const cliente = clientesOrdenados[i];
       L.marker(punto)
@@ -91,7 +83,6 @@ export default function MiRutaPage() {
         <img src="/logo.png" alt="Logotipo" className="mx-auto h-16 w-auto mb-2" />
         <h2 className="text-xl font-bold text-white">📋 Mi Ruta Asignada</h2>
       </div>
-
       <div className="max-w-3xl mx-auto bg-black/40 p-6 rounded-xl border border-red-500/30">
         {!rutaAsignada ? (
           <div className="text-center py-8">
@@ -104,13 +95,12 @@ export default function MiRutaPage() {
               <h3 className="text-xl font-bold text-white">{rutaAsignada.nombre}</h3>
               <p className="text-red-200">📍 Zona: {rutaAsignada.zona || "No especificada"}</p>
               <p className="text-gray-300 mt-1">
-                👷 Operador: {datosApp.operadores.find((o: any) => o.id === rutaAsignada.operadorId)?.nombre || "Desconocido"}
+                👷 Operador: {datosApp?.operadores?.find((o: any) => o.id === rutaAsignada.operadorId)?.nombre || "Desconocido"}
                 {" | "}
-                🚛 Unidad: {datosApp.unidades.find((u: any) => u.id === rutaAsignada.unidadId)?.placa || "Desconocida"}
+                🚛 Unidad: {datosApp?.unidades?.find((u: any) => u.id === rutaAsignada.unidadId)?.placa || "Desconocida"}
               </p>
             </div>
 
-            {/* ✅ MAPA DE LA RUTA */}
             {clientesOrdenados.length > 0 && (
               <div className="mb-6">
                 <h4 className="font-bold text-white mb-3">🗺️ Mapa de la Ruta</h4>
@@ -134,10 +124,9 @@ export default function MiRutaPage() {
                       {i + 1}
                     </span>
                     <div>
-                      <p className="font-bold text-white">{cliente.nombre}</p>
-                      <p className="text-sm text-gray-400">{cliente.direccion || "Sin dirección registrada"}</p>
-                      {/* ✅ CORREGIDO: latitud y longitud */}
-                      {cliente.latitud && cliente.longitud && (
+                      <p className="font-bold text-white">{cliente?.nombre}</p>
+                      <p className="text-sm text-gray-400">{cliente?.direccion || "Sin dirección registrada"}</p>
+                      {cliente?.latitud && cliente?.longitud && (
                         <p className="text-xs text-green-400 mt-1">
                           📍 {parseFloat(cliente.latitud).toFixed(6)}, {parseFloat(cliente.longitud).toFixed(6)}
                         </p>
@@ -150,7 +139,6 @@ export default function MiRutaPage() {
           </>
         )}
       </div>
-
       <div className="text-center mt-8 space-x-4">
         <Link to="/dashboard" className="inline-block bg-gray-700/70 hover:bg-gray-600 px-6 py-3 rounded-lg text-white font-bold">
           ← Volver al Menú Principal

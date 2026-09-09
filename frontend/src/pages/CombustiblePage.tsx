@@ -20,10 +20,10 @@ export default function CombustiblePage() {
       return alert("⚠️ Fecha, Litros e Importe son obligatorios");
     
     const nuevo = {
-      id: Date.now(),
-      ...form,
-      fechaHora: new Date().toLocaleString()
-    };
+  id: Math.floor(Math.random() * 2000000000) + 2,
+  ...form,
+  fechaHora: new Date().toLocaleString()
+};
     
     setDatosApp({ 
       ...datosApp, 

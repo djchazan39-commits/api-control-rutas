@@ -25,10 +25,14 @@ export default function RespaldoPage() {
         <img src="/logo.png" alt="Logotipo" className="mx-auto h-24 w-auto object-contain mb-2" />
         <h2 className="text-xl font-bold text-red-200">💾 Respaldo de Información</h2>
       </div>
-
       <div className="max-w-2xl mx-auto bg-black/40 p-6 rounded-xl border border-red-500/30 text-center">
         <p className="text-lg text-gray-300 mb-6">Crea una copia de seguridad con toda la información del sistema</p>
-        <button onClick={descargar} className="px-8 py-4 bg-green-700 hover:bg-green-600 rounded-lg text-xl font-bold">⬇️ Descargar Respaldo</button>
+        <button 
+          onClick={descargar} 
+          className="px-8 py-4 bg-green-700 hover:bg-green-600 rounded-lg text-xl font-bold"
+        >
+          ⬇️ Descargar Respaldo
+        </button>
         <div className="mt-6 text-left p-4 bg-white/5 rounded-lg">
           <p className="text-sm text-gray-400 mb-2">📋 Información incluida:</p>
           <ul className="text-sm text-gray-300 space-y-1">
@@ -41,10 +45,16 @@ export default function RespaldoPage() {
           </ul>
         </div>
       </div>
-
       <div className="text-center mt-8 space-x-4">
-        <Link to="/dashboard" className="inline-block bg-gray-700/70 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold">← Volver al Menú</Link>
-        <button onClick={cerrarSesion} className="bg-red-800/70 hover:bg-red-700 px-6 py-3 rounded-lg font-bold">🚪 Cerrar Sesión</button>
+        <Link to="/dashboard" className="inline-block bg-gray-700/70 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold">
+          ← Volver al Menú
+        </Link>
+        <button 
+          onClick={cerrarSesion} 
+          className="bg-red-800/70 hover:bg-red-700 px-6 py-3 rounded-lg font-bold"
+        >
+          🚪 Cerrar Sesión
+        </button>
       </div>
     </div>
   );

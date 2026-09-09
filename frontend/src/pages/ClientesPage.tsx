@@ -6,7 +6,8 @@ export default function ClientesPage() {
   const { usuarioActivo, datosApp, setDatosApp, guardarCambios, cerrarSesion } = useDatos();
   const lista = datosApp?.clientes || [];
   const [modoCoord, setModoCoord] = useState<'gps' | 'manual'>('gps');
-  // ✅ CORREGIDO: ahora se llaman latitud y longitud (igual que el mapa)
+  
+  // ✅ CORREGIDO: Faltaba "setForm] ="
   const [form, setForm] = useState({ 
     nombre: "", 
     direccion: "", 
@@ -27,7 +28,6 @@ export default function ClientesPage() {
       (posicion) => {
         const lat = posicion.coords.latitude;
         const lon = posicion.coords.longitude;
-        // ✅ CORREGIDO: guarda como latitud y longitud
         setForm({
           ...form,
           latitud: String(lat),
@@ -61,9 +61,10 @@ export default function ClientesPage() {
         clientes: lista.map(c => c.id === editId ? { ...c, ...form } as any : c)
       });
     } else {
+      const nuevoId = Math.floor(Math.random() * 2000000000) + 2;
       setDatosApp({ 
         ...datosApp, 
-        clientes: [...lista, { id: Date.now(), ...form } as any] 
+        clientes: [...lista, { id: nuevoId, ...form } as any] 
       });
     }
     guardarCambios();
@@ -77,7 +78,6 @@ export default function ClientesPage() {
       nombre: c.nombre, 
       direccion: c.direccion, 
       telefono: c.telefono, 
-      // ✅ CORREGIDO: lee latitud y longitud al editar
       latitud: c.latitud || "", 
       longitud: c.longitud || "" 
     });
@@ -95,7 +95,6 @@ export default function ClientesPage() {
         <img src="/logo.png" alt="Logotipo" className="mx-auto h-24 w-auto object-contain mb-2" />
         <h2 className="text-xl font-bold text-red-200">🏢 Gestión de Clientes</h2>
       </div>
-
       <div className="max-w-4xl mx-auto bg-black/40 p-6 rounded-xl border border-red-500/30">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="md:col-span-2">
@@ -180,14 +179,12 @@ export default function ClientesPage() {
             </div>
           </div>
         </div>
-
         <div className="flex gap-3 mb-6">
           <button onClick={guardar} className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-bold">
             {editId ? "✏️ Actualizar" : "✅ Guardar"}
           </button>
           {editId && <button onClick={limpiar} className="px-6 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>}
         </div>
-
         <h3 className="font-bold text-lg mb-3">Lista de Clientes ({lista.length})</h3>
         <div className="space-y-2 max-h-80 overflow-y-auto">
           {lista.map((c: any) => (
@@ -196,7 +193,6 @@ export default function ClientesPage() {
                 <p className="font-bold">{c.nombre}</p>
                 {c.direccion && <p className="text-sm text-gray-400">{c.direccion}</p>}
                 {c.telefono && <p className="text-sm text-gray-400">📞 {c.telefono}</p>}
-                {/* ✅ CORREGIDO: muestra latitud y longitud */}
                 {c.latitud && c.longitud && (
                   <p className="text-xs text-green-400">📍 {c.latitud}, {c.longitud}</p>
                 )}
@@ -209,7 +205,6 @@ export default function ClientesPage() {
           ))}
         </div>
       </div>
-
       <div className="text-center mt-8 space-x-4">
         <Link to="/dashboard" className="inline-block bg-gray-700/70 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold">← Volver al Menú</Link>
         <button onClick={cerrarSesion} className="bg-red-800/70 hover:bg-red-700 px-6 py-3 rounded-lg font-bold">🚪 Cerrar Sesión</button>

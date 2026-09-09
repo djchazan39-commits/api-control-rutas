@@ -33,9 +33,9 @@ export default function RutasPage() {
   const manejarEnter = (e: React.KeyboardEvent, siguienteId: string | null) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      siguienteId 
-        ? document.getElementById(siguienteId)?.focus() 
-        : guardar(); // ← En el último campo, Enter = Guardar
+      siguienteId
+        ? document.getElementById(siguienteId)?.focus()
+        : guardar();
     }
   };
 
@@ -63,27 +63,28 @@ export default function RutasPage() {
     const mapa = (window as any)._mapaRuta;
     if (!mapa) return;
 
-    // Borrar marcadores y rutas anteriores
     mapa.eachLayer((capa: any) => {
       if (capa instanceof L.Marker || capa instanceof L.Polyline) mapa.removeLayer(capa);
     });
 
     const puntos: [number, number][] = [];
-   // Dibujar cada cliente en orden
-form.ordenClientes.forEach((idCliente) => {
-  const cliente = clientes.find((c: any) => c.id === idCliente);
-  if (cliente && (cliente as any).latitud && (cliente as any).longitud) {
-    const lat = parseFloat((cliente as any).latitud);
-    const lng = parseFloat((cliente as any).longitud);
-    if (!isNaN(lat) && !isNaN(lng)) {
-      puntos.push([lat, lng]);
-      L.marker([lat, lng])
-        .addTo(mapa)
-        .bindPopup(`<b>${cliente.nombre}</b><br>${(cliente as any).direccion || ""}`);
-    }
-  }
-});
-    // ✅ Dibujar línea de recorrido
+    form.ordenClientes.forEach((idCliente) => {
+      const cliente = clientes.find((c: any) => c.id === idCliente);
+      if (cliente) {
+        const c = cliente as any;
+        if (c.latitud && c.longitud) {
+          const lat = parseFloat(c.latitud);
+          const lng = parseFloat(c.longitud);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            puntos.push([lat, lng]);
+            L.marker([lat, lng])
+              .addTo(mapa)
+              .bindPopup(`<b>${c.nombre}</b><br>${c.direccion || ""}`);
+          }
+        }
+      }
+    });
+
     if (puntos.length > 0) {
       L.polyline(puntos, {
         color: 'red',
@@ -139,9 +140,11 @@ form.ordenClientes.forEach((idCliente) => {
         )
       });
     } else {
+      // ✅ ID CORREGIDO — número seguro para PostgreSQL
+      const nuevoId = Math.floor(Math.random() * 2000000000) + 2;
       setDatosApp({
         ...datosApp,
-        rutas: [...lista, { ...form, id: Date.now(), fechaCreacion: new Date().toLocaleDateString() } as any]
+        rutas: [...lista, { ...form, id: nuevoId, fechaCreacion: new Date().toLocaleDateString() } as any]
       });
     }
     guardarCambios();
@@ -180,7 +183,9 @@ form.ordenClientes.forEach((idCliente) => {
       <div className="max-w-4xl mx-auto bg-black/40 p-6 rounded-xl border border-red-500/30">
         {modo === "lista" ? (
           <>
-            <button onClick={() => setModo("form")} className="mb-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white font-bold">➕ Nueva Ruta</button>
+            <button onClick={() => setModo("form")} className="mb-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white font-bold">
+              ➕ Nueva Ruta
+            </button>
             {lista.length === 0 ? (
               <p className="text-amber-300">Sin rutas registradas</p>
             ) : (
@@ -258,7 +263,7 @@ form.ordenClientes.forEach((idCliente) => {
                   id="campo_un_ruta"
                   value={form.unidadId}
                   onChange={(e) => setForm({ ...form, unidadId: e.target.value })}
-                  onKeyDown={(e) => manejarEnter(e, null)} // ← Último campo: Enter = GUARDAR
+                  onKeyDown={(e) => manejarEnter(e, null)}
                   className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white"
                 >
                   <option value="">Selecciona...</option>
@@ -275,7 +280,6 @@ form.ordenClientes.forEach((idCliente) => {
                 📍 Orden de recorrido — {form.ordenClientes.length} clientes seleccionados
               </label>
 
-              {/* ✅ Lista en orden con botones para mover */}
               {form.ordenClientes.length > 0 && (
                 <div className="mb-3 p-3 bg-green-900/30 rounded-lg border border-green-500/30">
                   <p className="text-sm font-bold text-green-300 mb-2">✅ Orden actual de visita:</p>
@@ -297,7 +301,6 @@ form.ordenClientes.forEach((idCliente) => {
                 </div>
               )}
 
-              {/* Lista de clientes disponibles para agregar */}
               <div className="max-h-40 overflow-y-auto border border-white/20 rounded-lg p-3 bg-white/5">
                 {clientes.length === 0 ? (
                   <p className="text-gray-400">Primero registra clientes con su ubicación</p>
@@ -322,7 +325,7 @@ form.ordenClientes.forEach((idCliente) => {
               </div>
             </div>
 
-            {/* 🗺️ MAPA DE PREVISUALIZACIÓN DE LA RUTA */}
+            {/* 🗺️ MAPA DE PREVISUALIZACIÓN */}
             <div className="mb-4">
               <label className="block text-sm text-amber-300 mb-2 font-bold">🗺️ Vista previa del recorrido</label>
               <div

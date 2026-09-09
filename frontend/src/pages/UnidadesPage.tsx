@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useDatos } from "../context/DatosContext";
 
@@ -20,9 +20,10 @@ export default function UnidadesPage() {
     if (editId) {
       setDatosApp({
         ...datosApp,
-        unidades: lista.map(u => u.id === editId ? { ...u, ...form } : u)
+        unidades: lista.map((u: any) => u.id === editId ? { ...u, ...form } : u)
       });
     } else {
+      // ✅ ID compatible con PostgreSQL
       setDatosApp({ ...datosApp, unidades: [...lista, { id: Date.now(), ...form }] });
     }
     guardarCambios();
@@ -37,7 +38,7 @@ export default function UnidadesPage() {
 
   const eliminar = (id: number) => {
     if (!confirm("¿Eliminar esta unidad?")) return;
-    setDatosApp({ ...datosApp, unidades: lista.filter(u => u.id !== id) });
+    setDatosApp({ ...datosApp, unidades: lista.filter((u: any) => u.id !== id) });
     guardarCambios();
   };
 
@@ -47,7 +48,6 @@ export default function UnidadesPage() {
         <img src="/logo.png" alt="Logotipo" className="mx-auto h-24 w-auto object-contain mb-2" />
         <h2 className="text-xl font-bold text-red-200">🚛 Gestión de Unidades</h2>
       </div>
-
       <div className="max-w-4xl mx-auto bg-black/40 p-6 rounded-xl border border-red-500/30">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
@@ -71,21 +71,19 @@ export default function UnidadesPage() {
               className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white" placeholder="Capacidad" />
           </div>
         </div>
-
         <div className="flex gap-3 mb-6">
           <button onClick={guardar} className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-bold">
             {editId ? "✏️ Actualizar" : "✅ Guardar"}
           </button>
           {editId && <button onClick={limpiar} className="px-6 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>}
         </div>
-
         <h3 className="font-bold text-lg mb-3">Lista de Unidades ({lista.length})</h3>
         <div className="space-y-2">
-          {lista.map(u => (
+          {lista.map((u: any) => (
             <div key={u.id} className="p-3 bg-white/5 rounded-lg border border-white/10 flex justify-between items-center">
               <div>
-                <p className="font-bold">{(u as any).placa} — {(u as any).marca} {(u as any).modelo}</p>
-{(u as any).capacidad && <p className="text-sm text-gray-400">Capacidad: {(u as any).capacidad}</p>}
+                <p className="font-bold">{u.placa} — {u.marca} {u.modelo}</p>
+                {u.capacidad && <p className="text-sm text-gray-400">Capacidad: {u.capacidad}</p>}
               </div>
               <div className="space-x-2">
                 <button onClick={() => editar(u)} className="text-yellow-400">✏️ Editar</button>
@@ -95,7 +93,6 @@ export default function UnidadesPage() {
           ))}
         </div>
       </div>
-
       <div className="text-center mt-8 space-x-4">
         <Link to="/dashboard" className="inline-block bg-gray-700/70 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold">← Volver al Menú</Link>
         <button onClick={cerrarSesion} className="bg-red-800/70 hover:bg-red-700 px-6 py-3 rounded-lg font-bold">🚪 Cerrar Sesión</button>

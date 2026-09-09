@@ -13,25 +13,43 @@ const LICENCIAS: Record<string, string[]> = {
 export default function OperadoresPage() {
   const { usuarioActivo, datosApp, setDatosApp, guardarCambios, cerrarSesion } = useDatos();
   const lista = datosApp?.operadores || [];
-  const [form, setForm] = useState({ nombre: "", licenciaTipo: "QUERETARO", licenciaClase: "", licenciaVence: "", telefono: "" });
+  const [form, setForm] = useState({ 
+    nombre: "", 
+    licenciaTipo: "QUERETARO", 
+    licenciaClase: "", 
+    licenciaVence: "", 
+    telefono: "" 
+  });
   const [editId, setEditId] = useState<number | null>(null);
 
   if (!usuarioActivo) return <Navigate to="/" replace />;
 
   const limpiar = () => {
-    setForm({ nombre: "", licenciaTipo: "QUERETARO", licenciaClase: "", licenciaVence: "", telefono: "" });
+    setForm({ 
+      nombre: "", 
+      licenciaTipo: "QUERETARO", 
+      licenciaClase: "", 
+      licenciaVence: "", 
+      telefono: "" 
+    });
     setEditId(null);
   };
 
   const guardar = () => {
     if (!form.nombre.trim()) return alert("⚠️ Escribe el nombre");
+    
     if (editId) {
       setDatosApp({
         ...datosApp,
         operadores: lista.map(o => o.id === editId ? { ...o, ...form } : o)
       });
     } else {
-      setDatosApp({ ...datosApp, operadores: [...lista, { id: Date.now(), ...form } as any] });
+      // ✅ ID CORREGIDO → número pequeño para PostgreSQL
+      const nuevoId = Math.floor(Math.random() * 2000000000) + 2;
+      setDatosApp({ 
+        ...datosApp, 
+        operadores: [...lista, { id: nuevoId, ...form } as any] 
+      });
     }
     guardarCambios();
     limpiar();
@@ -40,7 +58,13 @@ export default function OperadoresPage() {
 
   const editar = (o: any) => {
     setEditId(o.id);
-    setForm({ nombre: o.nombre, licenciaTipo: o.licenciaTipo || "QUERETARO", licenciaClase: o.licenciaClase || "", licenciaVence: o.licenciaVence || "", telefono: o.telefono || "" });
+    setForm({ 
+      nombre: o.nombre, 
+      licenciaTipo: o.licenciaTipo || "QUERETARO", 
+      licenciaClase: o.licenciaClase || "", 
+      licenciaVence: o.licenciaVence || "", 
+      telefono: o.telefono || "" 
+    });
   };
 
   const eliminar = (id: number) => {
@@ -57,18 +81,26 @@ export default function OperadoresPage() {
         <img src="/logo.png" alt="Logotipo" className="mx-auto h-24 w-auto object-contain mb-2" />
         <h2 className="text-xl font-bold text-red-200">👷 Gestión de Operadores</h2>
       </div>
-
       <div className="max-w-4xl mx-auto bg-black/40 p-6 rounded-xl border border-red-500/30">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
             <label className="block text-sm text-gray-300 mb-1">Nombre Completo</label>
-            <input type="text" value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})}
-              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white" placeholder="Nombre del operador" autoFocus />
+            <input 
+              type="text" 
+              value={form.nombre} 
+              onChange={e => setForm({...form, nombre: e.target.value})}
+              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white" 
+              placeholder="Nombre del operador" 
+              autoFocus 
+            />
           </div>
           <div>
             <label className="block text-sm text-gray-300 mb-1">Tipo de Licencia</label>
-            <select value={form.licenciaTipo} onChange={e => setForm({...form, licenciaTipo: e.target.value, licenciaClase: ""})}
-              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white">
+            <select 
+              value={form.licenciaTipo} 
+              onChange={e => setForm({...form, licenciaTipo: e.target.value, licenciaClase: ""})}
+              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white"
+            >
               <option value="QUERETARO">Querétaro</option>
               <option value="ESTADO_MEXICO">Estado de México</option>
               <option value="CDMX">CDMX</option>
@@ -77,31 +109,41 @@ export default function OperadoresPage() {
           </div>
           <div>
             <label className="block text-sm text-gray-300 mb-1">Clase / Categoría</label>
-            <select value={form.licenciaClase} onChange={e => setForm({...form, licenciaClase: e.target.value})}
-              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white">
+            <select 
+              value={form.licenciaClase} 
+              onChange={e => setForm({...form, licenciaClase: e.target.value})}
+              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white"
+            >
               <option value="">Selecciona clase</option>
               {clasesDisponibles.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-sm text-gray-300 mb-1">Vencimiento</label>
-            <input type="date" value={form.licenciaVence} onChange={e => setForm({...form, licenciaVence: e.target.value})}
-              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white" />
+            <input 
+              type="date" 
+              value={form.licenciaVence} 
+              onChange={e => setForm({...form, licenciaVence: e.target.value})}
+              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white" 
+            />
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm text-gray-300 mb-1">Teléfono</label>
-            <input type="text" value={form.telefono} onChange={e => setForm({...form, telefono: e.target.value})}
-              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white" placeholder="Teléfono" />
+            <input 
+              type="text" 
+              value={form.telefono} 
+              onChange={e => setForm({...form, telefono: e.target.value})}
+              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white" 
+              placeholder="Teléfono" 
+            />
           </div>
         </div>
-
         <div className="flex gap-3 mb-6">
           <button onClick={guardar} className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-bold">
             {editId ? "✏️ Actualizar" : "✅ Guardar"}
           </button>
           {editId && <button onClick={limpiar} className="px-6 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>}
         </div>
-
         <h3 className="font-bold text-lg mb-3">Lista de Operadores ({lista.length})</h3>
         <div className="space-y-2">
           {lista.map(o => (
@@ -109,7 +151,7 @@ export default function OperadoresPage() {
               <div>
                 <p className="font-bold">{o.nombre}</p>
                 <p className="text-sm text-gray-400">
-                Licencia: {(o as any).licenciaTipo} — {(o as any).licenciaClase || "Sin clase"} | Vence: {(o as any).licenciaVence || "Sin fecha"}
+                  Licencia: {(o as any).licenciaTipo} — {(o as any).licenciaClase || "Sin clase"} | Vence: {(o as any).licenciaVence || "Sin fecha"}
                 </p>
                 {o.telefono && <p className="text-sm text-gray-400">📞 {o.telefono}</p>}
               </div>
@@ -121,7 +163,6 @@ export default function OperadoresPage() {
           ))}
         </div>
       </div>
-
       <div className="text-center mt-8 space-x-4">
         <Link to="/dashboard" className="inline-block bg-gray-700/70 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold">← Volver al Menú</Link>
         <button onClick={cerrarSesion} className="bg-red-800/70 hover:bg-red-700 px-6 py-3 rounded-lg font-bold">🚪 Cerrar Sesión</button>
