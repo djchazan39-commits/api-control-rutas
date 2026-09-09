@@ -57,9 +57,9 @@ app.get('/api/datos', async (req, res) => {
 // ========== GUARDAR DATOS ==========
 app.post('/api/datos', async (req, res) => {
   try {
-    const { usuarios, operadores, unidades, clientes, rutas, entregas, combustible, ubicaciones } = req.body;
+    const { usuarios, operadores, unidades, clientes, rutas, entregas, ubicaciones } = req.body;
     
-    console.log("📥 RECIBIDO — Usuarios:", usuarios?.length, "Operadores:", operadores?.length, "Clientes:", clientes?.length);
+    console.log("📥 RECIBIDO — Usuarios:", usuarios?.length);
     
     // ✅ Limpiar tablas (MENOS USUARIOS — NUNCA SE BORRAN)
     await pool.query('DELETE FROM ubicaciones');
@@ -89,9 +89,9 @@ app.post('/api/datos', async (req, res) => {
              SET nombre = $2, rol = $3, pass = $5, id = $1`,
             [u.id, u.nombre, u.rol, u.nick, u.pass || '']
           );
-          console.log("✅ Usuario guardado/actualizado:", u.nick);
+          console.log("✅ USUARIO GUARDADO:", u.nick, "ID:", u.id);
         } catch (e: any) {
-          console.log("⚠️ No se pudo guardar", u.nick, ":", e.message);
+          console.log("⚠️ ERROR AL GUARDAR", u.nick, ":", e.message);
         }
       }
     }
@@ -136,10 +136,10 @@ app.post('/api/datos', async (req, res) => {
       );
     }
 
-    console.log("✅ ✅ TODO GUARDADO CORRECTAMENTE — Total usuarios:", usuarios?.length);
-    res.json({ ok: true, mensaje: "Guardado correctamente", usuariosGuardados: usuarios?.length });
+    console.log("✅ ✅ TODO GUARDADO — Total usuarios guardados:", usuarios?.length);
+    res.json({ ok: true, usuariosGuardados: usuarios?.length });
   } catch (err: any) {
-    console.error('❌ ERROR AL GUARDAR:', err.message);
+    console.error('❌ ERROR:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
