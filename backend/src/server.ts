@@ -3,10 +3,13 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { pool, testConnection } from './config/db';
 dotenv.config();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
 app.use(cors({ origin: "*" }));
 app.use(express.json());
+
 const ADMIN_NICK = 'admin';
 const ADMIN_PASS = 'admin1530';
 
@@ -67,9 +70,6 @@ app.post('/api/datos', async (req, res) => {
     await pool.query('DELETE FROM unidades');
     await pool.query('DELETE FROM operadores');
     
-    // ✅ NUNCA BORRAR USUARIOS — Se quedan guardados para siempre
-    // Solo se agregan o actualizan, NUNCA se eliminan desde aquí
-
     // ✅ ASEGURAR QUE EXISTA EL ADMINISTRADOR
     await pool.query(
       `INSERT INTO usuarios (id, nombre, rol, nick, pass) 
@@ -78,15 +78,15 @@ app.post('/api/datos', async (req, res) => {
       [1, 'Administrador', 'administrador', ADMIN_NICK, ADMIN_PASS]
     );
 
-    // ✅ INSERTAR O ACTUALIZAR USUARIOS — NUNCA BORRAR
+    // ✅ INSERTAR O ACTUALIZAR USUARIOS — USANDO nick COMO LLAVE ÚNICA
     for (const u of usuarios) {
       if (u.nick !== ADMIN_NICK) {
         try {
           await pool.query(
             `INSERT INTO usuarios (id, nombre, rol, nick, pass) 
              VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (id) DO UPDATE 
-             SET nombre = $2, rol = $3, nick = $4, pass = $5`,
+             ON CONFLICT (nick) DO UPDATE 
+             SET nombre = $2, rol = $3, pass = $5, id = $1`,
             [u.id, u.nombre, u.rol, u.nick, u.pass || '']
           );
           console.log("✅ Usuario guardado/actualizado:", u.nick);
