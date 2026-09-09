@@ -3,8 +3,8 @@ import { DatosApp, UsuarioActivo } from "../types";
 import { cargarDatos, API } from "../config/api";
 
 interface ContextoDatos {
-  datosApp: DatosApp;
-  setDatosApp: React.Dispatch<React.SetStateAction<DatosApp>>;
+  datosApp: DatosApp | null;
+  setDatosApp: React.Dispatch<React.SetStateAction<DatosApp | null>>;
   usuarioActivo: UsuarioActivo | null;
   guardarCambios: () => Promise<void>;
   iniciarSesion: (nick: string, pass: string) => boolean;
@@ -13,34 +13,35 @@ interface ContextoDatos {
 
 const DatosContext = createContext<ContextoDatos | undefined>(undefined);
 
-// 🔹 USUARIO ADMINISTRADOR FIJO (NUNCA SE BORRA NI SE PIERDE CONTRASEÑA)
+// 🔹 USUARIO ADMINISTRADOR FIJO
 const adminFijo = {
   id: 1,
   nombre: "Administrador",
   rol: "administrador" as const,
   nick: "admin",
-  pass: "admin1530",
-  esFijo: true
+  pass: "admin1530"
 };
 
 export function DatosProvider({ children }: { children: ReactNode }) {
-  // ✅ INICIA VACÍO — DESPUÉS LO CARGA DEL SERVIDOR
+  // ✅ INICIAR VACÍO — NO borrar nada mientras carga
   const [datosApp, setDatosApp] = useState<DatosApp | null>(null);
   const [usuarioActivo, setUsuarioActivo] = useState<UsuarioActivo | null>(null);
 
   useEffect(() => {
     const cargar = async () => {
-      console.log("🔄 Cargando datos desde el servidor...");
-      const datosCargados = await cargarDatos();
+      console.log("🔄 Cargando desde:", API);
+      
+      // ✅ PRIMERO leer del servidor
+      const datosServidor = await cargarDatos();
 
-      if (datosCargados && datosCargados.usuarios) {
-        // ✅ Mantener todos los usuarios, SOLO asegurar el admin con su contraseña
-        const sinAdmin = datosCargados.usuarios.filter(u => u.id !== 1);
-        datosCargados.usuarios = [adminFijo, ...sinAdmin];
-        setDatosApp(datosCargados);
-        console.log("✅ Datos cargados del servidor — usuarios:", datosCargados.usuarios.length);
+      if (datosServidor && datosServidor.usuarios) {
+        // ✅ El servidor tiene datos → USARLOS SIN BORRAR A NADIE
+        const sinAdmin = datosServidor.usuarios.filter(u => u.id !== 1);
+        datosServidor.usuarios = [adminFijo, ...sinAdmin];
+        setDatosApp(datosServidor);
+        console.log("✅ CARGADO DEL SERVIDOR —", datosServidor.usuarios.length, "usuarios");
       } else {
-        // ✅ Si el servidor está vacío → iniciar con el administrador
+        // ⚠️ Servidor vacío → iniciar solo con administrador
         const inicial: DatosApp = {
           usuarios: [adminFijo],
           operadores: [],
@@ -52,14 +53,14 @@ export function DatosProvider({ children }: { children: ReactNode }) {
           ubicaciones: []
         };
         setDatosApp(inicial);
-        console.log("⚠️ Servidor vacío — iniciando con administrador");
+        console.log("⚠️ Iniciando con datos por defecto");
       }
 
-      const guardado = localStorage.getItem("usuarioActivo");
-      if (guardado) {
-        setUsuarioActivo(JSON.parse(guardado));
-      }
+      // ✅ Recuperar sesión guardada
+      const sesion = localStorage.getItem("usuarioActivo");
+      if (sesion) setUsuarioActivo(JSON.parse(sesion));
     };
+
     cargar();
   }, []);
 
@@ -89,33 +90,30 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     if (!datosApp) return;
 
     try {
-      // ✅ ANTES DE GUARDAR: Asegurar que el admin SIEMPRE tenga su contraseña correcta
+      // ✅ Asegurar contraseña del admin antes de guardar
       const datosAGuardar = { ...datosApp };
       const sinAdmin = datosAGuardar.usuarios.filter(u => u.id !== 1);
       datosAGuardar.usuarios = [adminFijo, ...sinAdmin];
 
       // ✅ Enviar al SERVIDOR CENTRAL
-      const respuesta = await fetch(API + '/datos', {
+      const resp = await fetch(API + '/datos', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(datosAGuardar)
       });
 
-      if (respuesta.ok) {
-        console.log("✅ GUARDADO EXITOSAMENTE EN EL SERVIDOR CENTRAL");
-      } else {
-        console.log("⚠️ El servidor respondió con error:", respuesta.status);
+      if (resp.ok) {
+        console.log("✅ GUARDADO EN SERVIDOR CENTRAL");
       }
-    } catch (error) {
-      // ✅ Si no hay internet, guarda en respaldo local
+    } catch (err) {
       localStorage.setItem("datosApp", JSON.stringify(datosApp));
-      console.log("⚠️ Guardado temporalmente en el dispositivo (sin internet)");
+      console.log("⚠️ Guardado localmente");
     }
   };
 
   // ✅ No mostrar nada hasta que los datos estén cargados
   if (!datosApp) {
-    return <div style={{color:'white',padding:'2rem',textAlign:'center'}}>Cargando sistema...</div>;
+    return <div style={{color:'white',padding:'3rem',textAlign:'center',fontSize:'1.2rem'}}>⏳ Cargando sistema...</div>;
   }
 
   return (
@@ -132,7 +130,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ✅ HOOK CORREGIDO
+// ✅ HOOK
 export function useDatos() {
   const contexto = useContext(DatosContext);
   if (!contexto) {
