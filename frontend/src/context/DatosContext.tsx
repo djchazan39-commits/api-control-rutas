@@ -13,7 +13,7 @@ interface ContextoDatos {
 
 const DatosContext = createContext<ContextoDatos | undefined>(undefined);
 
-// 🔹 USUARIO ADMINISTRADOR FIJO
+// 🔹 USUARIO ADMINISTRADOR FIJO (nunca se borra ni cambia contraseña)
 const adminFijo = {
   id: 1,
   nombre: "Administrador",
@@ -23,23 +23,24 @@ const adminFijo = {
 };
 
 export function DatosProvider({ children }: { children: ReactNode }) {
-  // ✅ INICIAR VACÍO — NO borrar nada mientras carga
   const [datosApp, setDatosApp] = useState<DatosApp | null>(null);
   const [usuarioActivo, setUsuarioActivo] = useState<UsuarioActivo | null>(null);
 
   useEffect(() => {
     const cargar = async () => {
       console.log("🔄 Cargando desde:", API);
-      
-      // ✅ PRIMERO leer del servidor
+
+      // ✅ PRIMERO leer TODO del servidor central
       const datosServidor = await cargarDatos();
 
-      if (datosServidor && datosServidor.usuarios) {
-        // ✅ El servidor tiene datos → USARLOS SIN BORRAR A NADIE
-        const sinAdmin = datosServidor.usuarios.filter(u => u.id !== 1);
-        datosServidor.usuarios = [adminFijo, ...sinAdmin];
-        setDatosApp(datosServidor);
-        console.log("✅ CARGADO DEL SERVIDOR —", datosServidor.usuarios.length, "usuarios");
+      if (datosServidor && datosServidor.usuarios && datosServidor.usuarios.length > 0) {
+        // ✅ Mantener TODOS los usuarios del servidor, SOLO asegurar contraseña del admin
+        const usuariosCorregidos = datosServidor.usuarios.map(u =>
+          u.nick === "admin" ? { ...u, pass: adminFijo.pass } : u
+        );
+
+        setDatosApp({ ...datosServidor, usuarios: usuariosCorregidos });
+        console.log("✅ CARGADO DEL SERVIDOR —", usuariosCorregidos.length, "usuarios");
       } else {
         // ⚠️ Servidor vacío → iniciar solo con administrador
         const inicial: DatosApp = {
@@ -88,14 +89,14 @@ export function DatosProvider({ children }: { children: ReactNode }) {
 
   const guardarCambios = async () => {
     if (!datosApp) return;
-
     try {
       // ✅ Asegurar contraseña del admin antes de guardar
       const datosAGuardar = { ...datosApp };
-      const sinAdmin = datosAGuardar.usuarios.filter(u => u.id !== 1);
-      datosAGuardar.usuarios = [adminFijo, ...sinAdmin];
+      datosAGuardar.usuarios = datosAGuardar.usuarios.map(u =>
+        u.nick === "admin" ? { ...u, pass: adminFijo.pass } : u
+      );
 
-      // ✅ Enviar al SERVIDOR CENTRAL
+      // ✅ Enviar TODO al SERVIDOR CENTRAL
       const resp = await fetch(API + '/datos', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -111,7 +112,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ✅ No mostrar nada hasta que los datos estén cargados
+  // ✅ Pantalla de carga mientras se leen los datos del servidor
   if (!datosApp) {
     return <div style={{color:'white',padding:'3rem',textAlign:'center',fontSize:'1.2rem'}}>⏳ Cargando sistema...</div>;
   }

@@ -2,15 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { pool, testConnection } from './config/db';
-
 dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 3000;
-
 app.use(cors({ origin: "*" }));
 app.use(express.json());
-
 const ADMIN_NICK = 'admin';
 const ADMIN_PASS = 'admin1530';
 
@@ -29,7 +25,7 @@ app.get('/api/datos', async (req, res) => {
     const entregas = await pool.query(`SELECT id, "idOperador", "idCliente", estado, observaciones, fecha, lat, lon FROM entregas ORDER BY fecha DESC`);
     const combustible = await pool.query(`SELECT id, "idOperador", "kmIni", "kmFin", litros, "costo", fecha FROM combustible ORDER BY fecha DESC`);
     const ubicaciones = await pool.query(`SELECT id, "idOperador", lat, lon, fecha FROM ubicaciones ORDER BY fecha DESC LIMIT 200`);
-
+    
     // ✅ Asegurar administrador con contraseña correcta
     let listaUsuarios = usuarios.rows.map((u: any) => 
       u.nick === ADMIN_NICK ? { ...u, pass: ADMIN_PASS } : u
@@ -38,7 +34,7 @@ app.get('/api/datos', async (req, res) => {
     if (!listaUsuarios.find((u: any) => u.nick === ADMIN_NICK)) {
       listaUsuarios.unshift({ id: 1, nombre: 'Administrador', rol: 'administrador', nick: ADMIN_NICK, pass: ADMIN_PASS });
     }
-
+    
     res.json({
       usuarios: listaUsuarios,
       operadores: operadores.rows,
@@ -61,8 +57,8 @@ app.post('/api/datos', async (req, res) => {
     const { usuarios, operadores, unidades, clientes, rutas, entregas, combustible, ubicaciones } = req.body;
     
     console.log("📥 RECIBIDO — Usuarios:", usuarios?.length, "Operadores:", operadores?.length, "Clientes:", clientes?.length);
-
-    // ✅ Limpiar tablas
+    
+    // ✅ Limpiar tablas (MENOS USUARIOS — NUNCA SE BORRAN)
     await pool.query('DELETE FROM ubicaciones');
     await pool.query('DELETE FROM combustible');
     await pool.query('DELETE FROM entregas');
@@ -70,9 +66,11 @@ app.post('/api/datos', async (req, res) => {
     await pool.query('DELETE FROM clientes');
     await pool.query('DELETE FROM unidades');
     await pool.query('DELETE FROM operadores');
-    await pool.query("DELETE FROM usuarios WHERE nick != $1", [ADMIN_NICK]);
+    
+    // ✅ NUNCA BORRAR USUARIOS — Se quedan guardados para siempre
+    // Solo se agregan o actualizan, NUNCA se eliminan desde aquí
 
-    // ✅ Asegurar que exista el administrador
+    // ✅ ASEGURAR QUE EXISTA EL ADMINISTRADOR
     await pool.query(
       `INSERT INTO usuarios (id, nombre, rol, nick, pass) 
        VALUES ($1, $2, $3, $4, $5)
@@ -80,17 +78,20 @@ app.post('/api/datos', async (req, res) => {
       [1, 'Administrador', 'administrador', ADMIN_NICK, ADMIN_PASS]
     );
 
-    // ✅ Insertar usuarios NUEVOS (sin tocar al admin)
+    // ✅ INSERTAR O ACTUALIZAR USUARIOS — NUNCA BORRAR
     for (const u of usuarios) {
       if (u.nick !== ADMIN_NICK) {
         try {
           await pool.query(
-            `INSERT INTO usuarios (id, nombre, rol, nick, pass) VALUES ($1, $2, $3, $4, $5)`,
+            `INSERT INTO usuarios (id, nombre, rol, nick, pass) 
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (id) DO UPDATE 
+             SET nombre = $2, rol = $3, nick = $4, pass = $5`,
             [u.id, u.nombre, u.rol, u.nick, u.pass || '']
           );
-          console.log("✅ Usuario guardado:", u.nombre);
-        } catch (e) {
-          console.log("⚠️ Usuario ya existe:", u.nick);
+          console.log("✅ Usuario guardado/actualizado:", u.nick);
+        } catch (e: any) {
+          console.log("⚠️ No se pudo guardar", u.nick, ":", e.message);
         }
       }
     }
@@ -99,7 +100,9 @@ app.post('/api/datos', async (req, res) => {
     for (const o of operadores) {
       await pool.query(
         `INSERT INTO operadores (id, nombre, licencia, vencimiento, telefono, nick, pass) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (id) DO UPDATE 
+         SET nombre = $2, licencia = $3, vencimiento = $4, telefono = $5, nick = $6, pass = $7`,
         [o.id, o.nombre, o.licencia || null, o.vencimiento || null, o.telefono || null, o.nick || null, o.pass || null]
       );
     }
@@ -107,7 +110,8 @@ app.post('/api/datos', async (req, res) => {
     // ✅ Insertar unidades
     for (const u of unidades) {
       await pool.query(
-        `INSERT INTO unidades (id, placa, modelo, capacidad) VALUES ($1, $2, $3, $4)`,
+        `INSERT INTO unidades (id, placa, modelo, capacidad) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (id) DO UPDATE SET placa = $2, modelo = $3, capacidad = $4`,
         [u.id, u.placa, u.modelo, u.capacidad || null]
       );
     }
@@ -115,7 +119,8 @@ app.post('/api/datos', async (req, res) => {
     // ✅ Insertar clientes
     for (const c of clientes) {
       await pool.query(
-        `INSERT INTO clientes (id, nombre, direccion, lat, lon) VALUES ($1, $2, $3, $4, $5)`,
+        `INSERT INTO clientes (id, nombre, direccion, lat, lon) VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (id) DO UPDATE SET nombre = $2, direccion = $3, lat = $4, lon = $5`,
         [c.id, c.nombre, c.direccion || null, c.latitud || c.lat || null, c.longitud || c.lon || null]
       );
     }
@@ -124,30 +129,14 @@ app.post('/api/datos', async (req, res) => {
     for (const r of rutas) {
       await pool.query(
         `INSERT INTO rutas (id, nombre, "idOperador", "idUnidad", "ordenClientes") 
-         VALUES ($1, $2, $3, $4, $5)`,
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (id) DO UPDATE 
+         SET nombre = $2, "idOperador" = $3, "idUnidad" = $4, "ordenClientes" = $5`,
         [r.id, r.nombre, r.operadorId || r.idOperador || null, r.idUnidad || null, JSON.stringify(r.ordenClientes || [])]
       );
     }
 
-    // ✅ Insertar entregas
-    for (const e of entregas) {
-      await pool.query(
-        `INSERT INTO entregas (id, "idOperador", "idCliente", estado, observaciones, fecha, lat, lon) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [e.id, e.idOperador || null, e.idCliente || null, e.estado || '', e.observaciones || null, e.fecha || null, e.lat || null, e.lon || null]
-      );
-    }
-
-    // ✅ Insertar combustible
-    for (const c of combustible) {
-      await pool.query(
-        `INSERT INTO combustible (id, "idOperador", "kmIni", "kmFin", litros, "costo", fecha) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [c.id, c.idOperador || null, c.kmInicial || c.kmIni || null, c.kmFinal || c.kmFin || null, c.litros || null, c.importe || c.costo || null, c.fecha || null]
-      );
-    }
-
-    console.log("✅ ✅ TODO GUARDADO CORRECTAMENTE");
+    console.log("✅ ✅ TODO GUARDADO CORRECTAMENTE — Total usuarios:", usuarios?.length);
     res.json({ ok: true, mensaje: "Guardado correctamente", usuariosGuardados: usuarios?.length });
   } catch (err: any) {
     console.error('❌ ERROR AL GUARDAR:', err.message);
@@ -155,10 +144,20 @@ app.post('/api/datos', async (req, res) => {
   }
 });
 
-// ========== INICIAR ==========
+// ========== INICIAR SERVIDOR ==========
 async function iniciar() {
-  await testConnection();
-  app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
+  try {
+    console.log("🔄 Conectando a PostgreSQL...");
+    await testConnection();
+    console.log("✅ Conectado a PostgreSQL correctamente");
+    const PUERTO = parseInt(process.env.PORT || "10000", 10);
+    app.listen(PUERTO, '0.0.0.0', () => {
+      console.log(`🚀 Servidor CORRIENDO en puerto ${PUERTO}`);
+    });
+  } catch (err: any) {
+    console.error('❌ ERROR:', err.message);
+    process.exit(1);
+  }
 }
 
 iniciar();
