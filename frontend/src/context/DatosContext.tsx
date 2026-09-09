@@ -28,17 +28,16 @@ export function DatosProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const cargar = async () => {
-      console.log("🔄 Cargando desde:", API);
-
+      console.log("🔄 VERSIÓN NUEVA — Cargando desde:", API);
+      
       // ✅ PRIMERO leer TODO del servidor central
       const datosServidor = await cargarDatos();
-
+      
       if (datosServidor && datosServidor.usuarios && datosServidor.usuarios.length > 0) {
         // ✅ Mantener TODOS los usuarios del servidor, SOLO asegurar contraseña del admin
         const usuariosCorregidos = datosServidor.usuarios.map(u =>
           u.nick === "admin" ? { ...u, pass: adminFijo.pass } : u
         );
-
         setDatosApp({ ...datosServidor, usuarios: usuariosCorregidos });
         console.log("✅ CARGADO DEL SERVIDOR —", usuariosCorregidos.length, "usuarios");
       } else {
@@ -56,10 +55,16 @@ export function DatosProvider({ children }: { children: ReactNode }) {
         setDatosApp(inicial);
         console.log("⚠️ Iniciando con datos por defecto");
       }
-
+      
       // ✅ Recuperar sesión guardada
       const sesion = localStorage.getItem("usuarioActivo");
-      if (sesion) setUsuarioActivo(JSON.parse(sesion));
+      if (sesion) {
+        try {
+          setUsuarioActivo(JSON.parse(sesion));
+        } catch {
+          localStorage.removeItem("usuarioActivo");
+        }
+      }
     };
 
     cargar();
@@ -95,20 +100,23 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       datosAGuardar.usuarios = datosAGuardar.usuarios.map(u =>
         u.nick === "admin" ? { ...u, pass: adminFijo.pass } : u
       );
-
+      
       // ✅ Enviar TODO al SERVIDOR CENTRAL
       const resp = await fetch(API + '/datos', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(datosAGuardar)
       });
-
+      
       if (resp.ok) {
         console.log("✅ GUARDADO EN SERVIDOR CENTRAL");
+      } else {
+        console.warn("⚠️ El servidor respondió con error:", resp.status);
       }
     } catch (err) {
+      // ⚠️ Si falla el servidor → guardar en local como respaldo
       localStorage.setItem("datosApp", JSON.stringify(datosApp));
-      console.log("⚠️ Guardado localmente");
+      console.log("⚠️ Guardado localmente como respaldo");
     }
   };
 
