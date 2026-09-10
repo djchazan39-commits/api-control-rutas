@@ -149,6 +149,14 @@ async function iniciar() {
   try {
     console.log("🔄 Conectando a PostgreSQL...");
     await testConnection();
+
+    // ✅ ASEGURAR QUE EL NOMBRE DE USUARIO SEA ÚNICO
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_nick 
+      ON usuarios (nick);
+    `);
+    console.log("✅ Índice de usuarios configurado");
+    
     console.log("✅ Conectado a PostgreSQL correctamente");
     const PUERTO = parseInt(process.env.PORT || "10000", 10);
     app.listen(PUERTO, '0.0.0.0', () => {
