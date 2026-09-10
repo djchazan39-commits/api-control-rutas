@@ -92,23 +92,22 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     setUsuarioActivo(null);
   };
 
-    // ✅ GUARDAR: ENVÍA LO QUE ESTÁ EN PANTALLA (incluye usuarios nuevos)
+    /  // ✅ GUARDAR: ENVIAR LO QUE ESTÁ EN PANTALLA (incluye usuarios nuevos)
   const guardarCambios = async () => {
     try {
-      // ✅ ENVIAR datosApp DIRECTAMENTE — tiene TODOS los usuarios (incluye el nuevo)
+      // ✅ NO LEAS DEL SERVIDOR → USA LO QUE YA TIENES EN MEMORIA
       await fetch(API + '/guardar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosApp)  // ← NO leer del servidor, usar lo que ya tenemos
+        body: JSON.stringify(datosApp)  // ← datosApp tiene 2 usuarios: Admin + Irving
       });
       console.log(`✅ GUARDADO EN SERVIDOR CENTRAL — Total: ${datosApp.usuarios.length} usuarios`);
     } catch (err) {
-      // ⚠️ Si falla el servidor → guardar en local como respaldo
+      // ⚠️ Respaldo local si falla el servidor
       localStorage.setItem("datosApp", JSON.stringify(datosApp));
       console.log("⚠️ Guardado localmente como respaldo");
     }
   };
-
   // ✅ Pantalla de carga mientras se leen los datos del servidor
   if (!datosApp) {
     return <div style={{color:'white',padding:'3rem',textAlign:'center',fontSize:'1.2rem'}}>⏳ Cargando sistema...</div>;
