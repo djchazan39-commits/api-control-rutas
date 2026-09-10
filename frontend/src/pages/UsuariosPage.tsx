@@ -30,36 +30,45 @@ export default function UsuariosPage() {
   };
 
   const guardar = () => {
-    if (!form.nombre.trim() || !form.rol || !form.nick.trim() || !form.pass.trim()) {
-      return alert("⚠️ Todos los campos son obligatorios");
-    }
-    if (editId) {
-      // ✅ EDITAR USUARIO EXISTENTE
-      setDatosApp({
-        ...datosApp,
-        usuarios: lista.map((u: any) => {
-          if (u.id === editId) {
-            if (u.esFijo) {
-              alert("⚠️ El usuario administrador no se puede modificar");
-              return u;
-            }
-            return { ...u, ...form };
-          }
-          return u;
-        })
-      });
-    } else {
-      // ✅ CREAR USUARIO NUEVO — SIN ID, EL SERVIDOR ASIGNA 2, 3, 4...
-      setDatosApp({
-        ...datosApp,
-        usuarios: [...lista, { ...form } as any]
-      });
-    }
-    guardarCambios();
-    limpiar();
-    alert("✅ Usuario guardado");
-  };
+  if (!form.nombre.trim() || !form.rol || !form.nick.trim() || !form.pass.trim()) {
+    return alert("⚠️ Todos los campos son obligatorios");
+  }
 
+  // ✅ PRIMERO CONSTRUIMOS LA LISTA NUEVA
+  let listaActualizada;
+  if (editId) {
+    // EDITAR USUARIO EXISTENTE
+    listaActualizada = lista.map((u: any) => {
+      if (u.id === editId) {
+        if (u.esFijo) {
+          alert("⚠️ El usuario administrador no se puede modificar");
+          return u;
+        }
+        return { ...u, ...form };
+      }
+      return u;
+    });
+  } else {
+    // CREAR USUARIO NUEVO — SIN ID, EL SERVIDOR ASIGNA 2, 3, 4...
+    listaActualizada = [...lista, { ...form } as any];
+  }
+
+  // ✅ AHORA SÍ: ASIGNAMOS Y ENVIAMOS LA LISTA QUE YA CONSTRUIMOS
+  const datosActualizados = { ...datosApp, usuarios: listaActualizada };
+  setDatosApp(datosActualizados);
+
+  // ✅ ENVIAMOS LA LISTA QUE YA SABEMOS QUE ESTÁ COMPLETA
+  fetch("https://sierra-queretaro.onrender.com/api/guardar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(datosActualizados)
+  })
+  .then(() => console.log("GUARDADO EN SERVIDOR CENTRAL — Total:", listaActualizada.length, "usuarios"))
+  .catch(() => localStorage.setItem("datosApp", JSON.stringify(datosActualizados)));
+
+  limpiar();
+  alert("✅ Usuario guardado");
+};
   const editar = (u: any) => {
     if (u.esFijo) {
       return alert("⚠️ El usuario administrador no se puede modificar");
