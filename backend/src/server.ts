@@ -78,23 +78,28 @@ app.post('/api/datos', async (req, res) => {
       [1, 'Administrador', 'administrador', ADMIN_NICK, ADMIN_PASS]
     );
 
-    // ✅ INSERTAR O ACTUALIZAR USUARIOS — USANDO nick COMO LLAVE ÚNICA
-    for (const u of usuarios) {
-      if (u.nick !== ADMIN_NICK) {
-        try {
-          await pool.query(
-            `INSERT INTO usuarios (id, nombre, rol, nick, pass) 
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (nick) DO UPDATE 
-             SET nombre = $2, rol = $3, pass = $5, id = $1`,
-            [u.id, u.nombre, u.rol, u.nick, u.pass || '']
-          );
-          console.log("✅ USUARIO GUARDADO:", u.nick, "ID:", u.id);
-        } catch (e: any) {
-          console.log("⚠️ ERROR AL GUARDAR", u.nick, ":", e.message);
-        }
-      }
-    }
+    // ✅ INSERTAR O ACTUALIZAR USUARIOS — POR SECUENCIA (1, 2, 3...)
+for (const u of usuarios) {
+  if (u.nick === ADMIN_NICK) continue; // Admin se maneja aparte
+  
+  try {
+    
+    // ✅ Buscar el ID MÁS ALTO actual y sumar +1
+    const maxIdResult = await pool.query('SELECT COALESCE(MAX(id), 1) + 1 as nextid FROM usuarios');
+    const proximoId = maxIdResult.rows[0].nextid;
+
+    await pool.query(
+      `INSERT INTO usuarios (id, nombre, rol, nick, pass) 
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (nick) DO UPDATE 
+       SET nombre = $2, rol = $3, pass = $5, id = $1`,
+      [proximoId, u.nombre, u.rol, u.nick, u.pass || '']
+    );
+    console.log(`✅ USUARIO GUARDADO: ${u.nick} → ID: ${proximoId}`);
+  } catch (e: any) {
+    console.log("❌ ERROR AL GUARDAR", u.nick, ":", e.message);
+  }
+}
 
     // ✅ Insertar operadores
     for (const o of operadores) {
@@ -110,8 +115,10 @@ app.post('/api/datos', async (req, res) => {
     // ✅ Insertar unidades
     for (const u of unidades) {
       await pool.query(
-        `INSERT INTO unidades (id, placa, modelo, capacidad) VALUES ($1, $2, $3, $4)
-         ON CONFLICT (id) DO UPDATE SET placa = $2, modelo = $3, capacidad = $4`,
+        `INSERT INTO unidades (id, placa, modelo, capacidad) 
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (id) DO UPDATE 
+         SET placa = $2, modelo = $3, capacidad = $4`,
         [u.id, u.placa, u.modelo, u.capacidad || null]
       );
     }
@@ -119,8 +126,10 @@ app.post('/api/datos', async (req, res) => {
     // ✅ Insertar clientes
     for (const c of clientes) {
       await pool.query(
-        `INSERT INTO clientes (id, nombre, direccion, lat, lon) VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (id) DO UPDATE SET nombre = $2, direccion = $3, lat = $4, lon = $5`,
+        `INSERT INTO clientes (id, nombre, direccion, lat, lon) 
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (id) DO UPDATE 
+         SET nombre = $2, direccion = $3, lat = $4, lon = $5`,
         [c.id, c.nombre, c.direccion || null, c.latitud || c.lat || null, c.longitud || c.lon || null]
       );
     }
