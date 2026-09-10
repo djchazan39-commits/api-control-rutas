@@ -156,6 +156,13 @@ async function iniciar() {
       ON usuarios (nick);
     `);
     console.log("✅ Índice de usuarios configurado");
+
+    // ✅ CORREGIR TIPO DE ID — cambiar integer a BIGINT
+    await pool.query(`
+      ALTER TABLE usuarios 
+      ALTER COLUMN id TYPE BIGINT;
+    `);
+    console.log("✅ Campo ID cambiado a BIGINT");
     
     console.log("✅ Conectado a PostgreSQL correctamente");
     const PUERTO = parseInt(process.env.PORT || "10000", 10);
