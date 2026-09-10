@@ -80,14 +80,22 @@ app.post('/api/datos', async (req, res) => {
 
     // ✅ INSERTAR O ACTUALIZAR USUARIOS — POR SECUENCIA (1, 2, 3...)
 for (const u of usuarios) {
-  if (u.nick === ADMIN_NICK) continue; // Admin se maneja aparte
-  
-  try {
-    
-    // ✅ Buscar el ID MÁS ALTO actual y sumar +1
-    const maxIdResult = await pool.query('SELECT COALESCE(MAX(id), 1) + 1 as nextid FROM usuarios');
-    const proximoId = maxIdResult.rows[0].nextid;
+  if (u.nick === ADMIN_NICK) continue;
 
+  try {
+    let proximoId;
+
+    // ✅ SI TRAE ID → USAMOS ESE
+    if (u.id) {
+      proximoId = u.id;
+    } 
+    // ✅ SI NO TRAE ID → CALCULAMOS EL SIGUIENTE
+    else {
+      const res = await pool.query('SELECT COALESCE(MAX(id), 1) + 1 as nextid FROM usuarios');
+      proximoId = res.rows[0].nextid;
+    }
+
+    // ✅ AHORA SÍ INSERTAMOS CON ID VÁLIDO
     await pool.query(
       `INSERT INTO usuarios (id, nombre, rol, nick, pass) 
        VALUES ($1, $2, $3, $4, $5)
@@ -97,10 +105,9 @@ for (const u of usuarios) {
     );
     console.log(`✅ USUARIO GUARDADO: ${u.nick} → ID: ${proximoId}`);
   } catch (e: any) {
-    console.log("❌ ERROR AL GUARDAR", u.nick, ":", e.message);
+    console.log("❌ ERROR:", u.nick, "→", e.message);
   }
 }
-
     // ✅ Insertar operadores
     for (const o of operadores) {
       await pool.query(
