@@ -34,11 +34,11 @@ export default function UsuariosPage() {
       return alert("⚠️ Todos los campos son obligatorios");
     }
     if (editId) {
+      // ✅ EDITAR USUARIO EXISTENTE
       setDatosApp({
         ...datosApp,
         usuarios: lista.map((u: any) => {
           if (u.id === editId) {
-            // ✅ No permitir editar el usuario ADMIN fijo
             if (u.esFijo) {
               alert("⚠️ El usuario administrador no se puede modificar");
               return u;
@@ -49,9 +49,10 @@ export default function UsuariosPage() {
         })
       });
     } else {
+      // ✅ CREAR USUARIO NUEVO — SIN ID, EL SERVIDOR ASIGNA 2, 3, 4...
       setDatosApp({
         ...datosApp,
-        usuarios: [...lista, { id: Date.now(), ...form } as any]
+        usuarios: [...lista, { ...form } as any]
       });
     }
     guardarCambios();
@@ -60,7 +61,6 @@ export default function UsuariosPage() {
   };
 
   const editar = (u: any) => {
-    // ✅ No permitir editar el usuario ADMIN fijo
     if (u.esFijo) {
       return alert("⚠️ El usuario administrador no se puede modificar");
     }
@@ -70,7 +70,6 @@ export default function UsuariosPage() {
 
   const eliminar = (id: number) => {
     const usuario = lista.find((u: any) => u.id === id);
-    // ✅ No permitir eliminar el usuario ADMIN fijo
     if (usuario && (usuario as any).esFijo) {
       return alert("⚠️ El usuario administrador no se puede eliminar");
     }
