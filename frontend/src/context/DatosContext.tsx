@@ -92,7 +92,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     setUsuarioActivo(null);
   };
 
-    /  //  GUARDAR: ENVIAR LO QUE ESTÁ EN PANTALLA (incluye usuarios nuevos)
+      //  GUARDAR: ENVIAR LO QUE ESTÁ EN PANTALLA (incluye usuarios nuevos)
   const guardarCambios = async () => {
     try {
       //  NO LEAS DEL SERVIDOR → USA LO QUE YA TIENES EN MEMORIA
