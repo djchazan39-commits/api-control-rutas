@@ -18,7 +18,6 @@ export async function cargarDatos() {
   } catch {
     console.log('Servidor no disponible');
   }
-
   // ✅ DATOS POR DEFECTO — CONTRASEÑA FIJA
   return {
     usuarios: [
@@ -32,6 +31,25 @@ export async function cargarDatos() {
     combustible: [],
     ubicaciones: []
   };
-};
+}
+
+// ✅ FUNCIÓN DE GUARDAR — MISMA RUTA /api/datos
+export async function guardarDatos(datos: any) {
+  try {
+    const resp = await fetch(API + '/datos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datos)
+    });
+    if (resp.ok) {
+      console.log("GUARDADO EN SERVIDOR CENTRAL — Total:", datos.usuarios.length, "usuarios");
+      return true;
+    }
+  } catch {
+    console.log('Servidor no disponible — guardado local');
+    localStorage.setItem("datosApp", JSON.stringify(datos));
+  }
+  return false;
+}
 
 export { API };
