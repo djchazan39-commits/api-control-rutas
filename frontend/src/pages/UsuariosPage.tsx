@@ -58,7 +58,7 @@ export default function UsuariosPage() {
   setDatosApp(datosActualizados);
 
   // ✅ ENVIAMOS LA LISTA QUE YA SABEMOS QUE ESTÁ COMPLETA
-  fetch("https://sierra-queretaro.onrender.com/api/guardar", {
+  fetch("https://sierra-queretaro.onrender.com/api/datos", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(datosActualizados)
