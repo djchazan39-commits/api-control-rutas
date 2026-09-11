@@ -1,28 +1,17 @@
 import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useDatos } from "../context/DatosContext";
+import { API } from "../config/api";
 
 export default function UsuariosPage() {
-  const { usuarioActivo, datosApp, setDatosApp, guardarCambios, cerrarSesion } = useDatos();
+  const { usuarioActivo, datosApp, setDatosApp, cerrarSesion } = useDatos();
   const lista = datosApp?.usuarios || [];
   const [form, setForm] = useState({ nombre: "", rol: "", nick: "", pass: "" });
   const [editId, setEditId] = useState<number | null>(null);
 
   if (!usuarioActivo) return <Navigate to="/" replace />;
 
-  // ✅ SOLO ADMINISTRADOR Y DIRECTOR PUEDEN GESTIONAR USUARIOS
   const puedeGestionar = usuarioActivo.rol === "administrador" || usuarioActivo.rol === "director";
-  if (!puedeGestionar) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-black to-red-950 text-white p-6 flex items-center justify-center">
-        <div className="text-center p-8 bg-black/50 rounded-xl border border-red-500/30 max-w-md">
-          <h2 className="text-2xl font-bold text-red-400 mb-4">🔒 Acceso Restringido</h2>
-          <p className="text-gray-300 mb-6">No tienes permiso para gestionar usuarios</p>
-          <Link to="/dashboard" className="inline-block bg-gray-700/70 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold">← Volver al Menú</Link>
-        </div>
-      </div>
-    );
-  }
 
   const limpiar = () => {
     setForm({ nombre: "", rol: "", nick: "", pass: "" });
@@ -30,45 +19,41 @@ export default function UsuariosPage() {
   };
 
   const guardar = () => {
-  if (!form.nombre.trim() || !form.rol || !form.nick.trim() || !form.pass.trim()) {
-    return alert("⚠️ Todos los campos son obligatorios");
-  }
+    if (!form.nombre.trim() || !form.rol || !form.nick.trim() || !form.pass.trim()) {
+      return alert("⚠️ Todos los campos son obligatorios");
+    }
 
-  // ✅ PRIMERO CONSTRUIMOS LA LISTA NUEVA
-  let listaActualizada;
-  if (editId) {
-    // EDITAR USUARIO EXISTENTE
-    listaActualizada = lista.map((u: any) => {
-      if (u.id === editId) {
-        if (u.esFijo) {
-          alert("⚠️ El usuario administrador no se puede modificar");
-          return u;
+    let listaActualizada;
+    if (editId) {
+      listaActualizada = lista.map((u: any) => {
+        if (u.id === editId) {
+          if (u.esFijo) {
+            alert("⚠️ El usuario administrador no se puede modificar");
+            return u;
+          }
+          return { ...u, ...form };
         }
-        return { ...u, ...form };
-      }
-      return u;
-    });
-  } else {
-    // CREAR USUARIO NUEVO — SIN ID, EL SERVIDOR ASIGNA 2, 3, 4...
-    listaActualizada = [...lista, { ...form } as any];
-  }
+        return u;
+      });
+    } else {
+      listaActualizada = [...lista, { ...form } as any];
+    }
 
-  // ✅ AHORA SÍ: ASIGNAMOS Y ENVIAMOS LA LISTA QUE YA CONSTRUIMOS
-  const datosActualizados = { ...datosApp, usuarios: listaActualizada };
-  setDatosApp(datosActualizados);
+    const datosActualizados = { ...datosApp!, usuarios: listaActualizada };
+    setDatosApp(datosActualizados);
 
-  // ✅ ENVIAMOS LA LISTA QUE YA SABEMOS QUE ESTÁ COMPLETA
-  fetch("https://sierra-queretaro.onrender.com/api/datos", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(datosActualizados)
-  })
-  .then(() => console.log("GUARDADO EN SERVIDOR CENTRAL — Total:", listaActualizada.length, "usuarios"))
-  .catch(() => localStorage.setItem("datosApp", JSON.stringify(datosActualizados)));
+    fetch(API + '/datos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datosActualizados)
+    })
+    .then(() => console.log("GUARDADO EN SERVIDOR CENTRAL — Total:", listaActualizada.length, "usuarios"))
+    .catch(() => localStorage.setItem("datosApp", JSON.stringify(datosActualizados)));
 
-  limpiar();
-  alert("✅ Usuario guardado");
-};
+    limpiar();
+    alert("✅ Usuario guardado");
+  };
+
   const editar = (u: any) => {
     if (u.esFijo) {
       return alert("⚠️ El usuario administrador no se puede modificar");
@@ -83,80 +68,94 @@ export default function UsuariosPage() {
       return alert("⚠️ El usuario administrador no se puede eliminar");
     }
     if (!confirm("¿Eliminar este usuario?")) return;
-    setDatosApp({ ...datosApp, usuarios: lista.filter((u: any) => u.id !== id) });
-    guardarCambios();
+
+    const listaActualizada = lista.filter((u: any) => u.id !== id);
+    const datosActualizados = { ...datosApp!, usuarios: listaActualizada };
+    setDatosApp(datosActualizados);
+
+    fetch(API + '/datos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datosActualizados)
+    });
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black to-red-950 text-white p-6">
-      <div className="text-center mb-6">
-        <img src="/logo.png" alt="Logotipo" className="mx-auto h-24 w-auto object-contain mb-2" />
-        <h2 className="text-xl font-bold text-red-200">👤 Gestión de Usuarios</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">👤 Usuarios del Sistema</h1>
+        <div className="space-x-3">
+          <Link to="/dashboard" className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">← Volver</Link>
+          <button onClick={cerrarSesion} className="px-4 py-2 bg-red-700 rounded hover:bg-red-600">Cerrar Sesión</button>
+        </div>
       </div>
-      <div className="max-w-4xl mx-auto bg-black/40 p-6 rounded-xl border border-red-500/30">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Nombre Completo *</label>
-            <input type="text" value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})}
-              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white" placeholder="Nombre del usuario" autoFocus />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Rol / Permisos *</label>
-            <select value={form.rol} onChange={e => setForm({...form, rol: e.target.value})}
-              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white">
-              <option value="">Selecciona un rol</option>
-              <option value="administrador">👑 Administrador</option>
-              <option value="director">🎩 Director</option>
-              <option value="logistica">📦 Logística</option>
-              <option value="operador">🚛 Operador</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Usuario / Nick *</label>
-            <input type="text" value={form.nick} onChange={e => setForm({...form, nick: e.target.value})}
-              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white" placeholder="Nombre de usuario" />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Contraseña *</label>
-            <input type="text" value={form.pass} onChange={e => setForm({...form, pass: e.target.value})}
-              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white" placeholder="Contraseña" />
+
+      {puedeGestionar && (
+        <div className="bg-gray-900 p-6 rounded-lg mb-8 max-w-lg mx-auto">
+          <h2 className="text-xl font-semibold mb-4">{editId ? "✏️ Editar Usuario" : "➕ Nuevo Usuario"}</h2>
+          <div className="space-y-3">
+            <label className="block">
+              <span className="text-gray-300">Nombre Completo *</span>
+              <input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded" />
+            </label>
+            <label className="block">
+              <span className="text-gray-300">Rol / Permisos *</span>
+              <select value={form.rol} onChange={e => setForm({ ...form, rol: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded">
+                <option value="">Selecciona un rol</option>
+                <option value="administrador">👑 Administrador</option>
+                <option value="director">🎩 Director</option>
+                <option value="logistica">📦 Logística</option>
+                <option value="operador">🚛 Operador</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-gray-300">Usuario / Nick *</span>
+              <input type="text" value={form.nick} onChange={e => setForm({ ...form, nick: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded" />
+            </label>
+            <label className="block">
+              <span className="text-gray-300">Contraseña *</span>
+              <input type="password" value={form.pass} onChange={e => setForm({ ...form, pass: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded" />
+            </label>
+            <div className="flex space-x-3 pt-2">
+              <button onClick={guardar}
+                className="px-6 py-2 bg-green-700 rounded font-semibold hover:bg-green-600">✅ Guardar</button>
+              {editId && <button onClick={limpiar}
+                className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">Cancelar</button>}
+            </div>
           </div>
         </div>
-        <div className="flex gap-3 mb-6">
-          <button onClick={guardar} className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-bold">
-            {editId ? "✏️ Actualizar" : "✅ Guardar"}
-          </button>
-          {editId && <button onClick={limpiar} className="px-6 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancelar</button>}
-        </div>
-        <h3 className="font-bold text-lg mb-3">Lista de Usuarios ({lista.length})</h3>
-        <div className="space-y-2 max-h-80 overflow-y-auto">
-          {lista.map((u: any) => (
-            <div key={u.id} className="p-3 bg-white/5 rounded-lg border border-white/10 flex justify-between items-center">
-              <div>
-                <p className="font-bold">
-                  {u.nombre}
-                  {u.esFijo && <span className="text-green-400 text-sm ml-2">🔒 Fijo</span>}
-                </p>
-                <p className="text-sm text-gray-400">
-                  {u.nick} | {u.rol === 'administrador' && '👑 Administrador'}
-                  {u.rol === 'director' && '🎩 Director'}
-                  {u.rol === 'logistica' && '📦 Logística'}
-                  {u.rol === 'operador' && '🚛 Operador'}
-                </p>
-              </div>
-              <div className="space-x-2">
-                <button onClick={() => editar(u)} className="text-yellow-400">✏️</button>
-                {!u.esFijo && (
-                  <button onClick={() => eliminar(u.id)} className="text-red-400">🗑️</button>
+      )}
+
+      <div className="max-w-2xl mx-auto">
+        <h2 className="text-xl font-semibold mb-3">Lista de Usuarios ({lista.length})</h2>
+        {lista.length === 0 ? (
+          <p className="text-gray-400">No hay usuarios registrados</p>
+        ) : (
+          <div className="space-y-2">
+            {lista.map((u: any) => (
+              <div key={u.id} className="bg-gray-900 p-3 rounded flex justify-between items-center">
+                <div>
+                  <div className="font-semibold">{u.nombre}</div>
+                  <div className="text-sm text-gray-400">
+                    {u.nick} | {u.rol === 'administrador' ? '👑 Administrador' :
+                      u.rol === 'director' ? '🎩 Director' :
+                      u.rol === 'logistica' ? '📦 Logística' : '🚛 Operador'}
+                  </div>
+                </div>
+                {puedeGestionar && !(u as any).esFijo && (
+                  <div className="space-x-2">
+                    <button onClick={() => editar(u)} className="text-yellow-400 hover:text-yellow-300">✏️</button>
+                    <button onClick={() => eliminar(u.id!)} className="text-red-400 hover:text-red-300">🗑️</button>
+                  </div>
                 )}
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="text-center mt-8 space-x-4">
-        <Link to="/dashboard" className="inline-block bg-gray-700/70 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold">← Volver al Menú</Link>
-        <button onClick={cerrarSesion} className="bg-red-800/70 hover:bg-red-700 px-6 py-3 rounded-lg font-bold">🚪 Cerrar Sesión</button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
