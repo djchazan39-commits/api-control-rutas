@@ -4,7 +4,8 @@ import { useDatos } from "../context/DatosContext";
 import { API } from "../config/api";
 
 export default function UsuariosPage() {
-  const { usuarioActivo, datosApp, setDatosApp, cerrarSesion } = useDatos();
+  // ✅ AGRESTA guardarEnServidor AQUÍ
+  const { usuarioActivo, datosApp, setDatosApp, cerrarSesion, guardarEnServidor } = useDatos();
   const lista = datosApp?.usuarios || [];
   const [form, setForm] = useState({ nombre: "", rol: "", nick: "", pass: "" });
   const [editId, setEditId] = useState<number | null>(null);
@@ -18,14 +19,14 @@ export default function UsuariosPage() {
     setEditId(null);
   };
 
-  const guardar = () => {
+  const guardar = async () => {
     if (!form.nombre.trim() || !form.rol || !form.nick.trim() || !form.pass.trim()) {
       return alert("⚠️ Todos los campos son obligatorios");
     }
 
-    let listaActualizada;
     if (editId) {
-      listaActualizada = lista.map((u: any) => {
+      // ✅ EDITAR — se mantiene tu lógica
+      const listaActualizada = lista.map((u: any) => {
         if (u.id === editId) {
           if (u.esFijo) {
             alert("⚠️ El usuario administrador no se puede modificar");
@@ -35,20 +36,20 @@ export default function UsuariosPage() {
         }
         return u;
       });
+      const datosActualizados = { ...datosApp!, usuarios: listaActualizada };
+      setDatosApp(datosActualizados);
+      await fetch(API + '/datos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosActualizados)
+      });
     } else {
-      listaActualizada = [...lista, { ...form } as any];
+      // ✅ CREAR NUEVO — EL SERVIDOR ASIGNA EL ID AUTOMÁTICAMENTE
+      const resultado = await guardarEnServidor("usuarios", form);
+      if (resultado?.ok) {
+        console.log("✅ Usuario guardado en PostgreSQL");
+      }
     }
-
-    const datosActualizados = { ...datosApp!, usuarios: listaActualizada };
-    setDatosApp(datosActualizados);
-
-    fetch(API + '/datos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(datosActualizados)
-    })
-    .then(() => console.log("GUARDADO EN SERVIDOR CENTRAL — Total:", listaActualizada.length, "usuarios"))
-    .catch(() => localStorage.setItem("datosApp", JSON.stringify(datosActualizados)));
 
     limpiar();
     alert("✅ Usuario guardado");
@@ -62,18 +63,17 @@ export default function UsuariosPage() {
     setForm({ nombre: u.nombre, rol: u.rol, nick: u.nick, pass: u.pass });
   };
 
-  const eliminar = (id: number) => {
+  const eliminar = async (id: number) => {
     const usuario = lista.find((u: any) => u.id === id);
     if (usuario && (usuario as any).esFijo) {
       return alert("⚠️ El usuario administrador no se puede eliminar");
     }
     if (!confirm("¿Eliminar este usuario?")) return;
-
+    
     const listaActualizada = lista.filter((u: any) => u.id !== id);
     const datosActualizados = { ...datosApp!, usuarios: listaActualizada };
     setDatosApp(datosActualizados);
-
-    fetch(API + '/datos', {
+    await fetch(API + '/datos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(datosActualizados)
@@ -89,7 +89,6 @@ export default function UsuariosPage() {
           <button onClick={cerrarSesion} className="px-4 py-2 bg-red-700 rounded hover:bg-red-600">Cerrar Sesión</button>
         </div>
       </div>
-
       {puedeGestionar && (
         <div className="bg-gray-900 p-6 rounded-lg mb-8 max-w-lg mx-auto">
           <h2 className="text-xl font-semibold mb-4">{editId ? "✏️ Editar Usuario" : "➕ Nuevo Usuario"}</h2>
@@ -129,7 +128,6 @@ export default function UsuariosPage() {
           </div>
         </div>
       )}
-
       <div className="max-w-2xl mx-auto">
         <h2 className="text-xl font-semibold mb-3">Lista de Usuarios ({lista.length})</h2>
         {lista.length === 0 ? (
