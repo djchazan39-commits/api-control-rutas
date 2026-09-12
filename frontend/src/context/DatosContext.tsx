@@ -7,6 +7,7 @@ interface ContextoDatos {
   setDatosApp: React.Dispatch<React.SetStateAction<DatosApp | null>>;
   usuarioActivo: UsuarioActivo | null;
   guardarCambios: () => Promise<void>;
+  guardarEnServidor: (seccion: string, nuevoRegistro: any) => Promise<{ok: boolean, local?: boolean} | undefined>;
   iniciarSesion: (nick: string, pass: string) => boolean;
   cerrarSesion: () => void;
 }
@@ -114,12 +115,55 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // ✅ FUNCIÓN DE GUARDADO ESTÁNDAR — TODOS LOS FORMULARIOS USAN ESTA MISMA
+const guardarEnServidor = async (seccion: string, nuevoRegistro: any) => {
+  if (!datosApp) return;
+
+  // ✅ Construir lista actualizada
+  const listaAnterior = (datosApp as any)[seccion] || [];
+  const listaActualizada = [...listaAnterior, nuevoRegistro];
+
+  // ✅ Construir objeto completo
+  const datosActualizados = {
+    usuarios: datosApp.usuarios,
+    operadores: datosApp.operadores,
+    unidades: datosApp.unidades,
+    clientes: datosApp.clientes,
+    rutas: datosApp.rutas,
+    entregas: datosApp.entregas,
+    combustible: datosApp.combustible,
+    ubicaciones: datosApp.ubicaciones,
+    [seccion]: listaActualizada  // ✅ SOLO CAMBIA ESTA PARTE SEGÚN EL FORMULARIO
+  };
+
+  setDatosApp(datosActualizados);
+
+  // ✅ Enviar al servidor
+  try {
+    const respuesta = await fetch(API + '/datos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datosActualizados)
+    });
+    if (respuesta.ok) {
+      console.log(`✅ GUARDADO (${seccion}) — Total: ${listaActualizada.length}`);
+      return { ok: true };
+    }
+    return { ok: false };
+  } catch {
+    localStorage.setItem("datosApp", JSON.stringify(datosActualizados));
+    console.log("⚠️ Guardado localmente");
+    return { ok: true, local: true };
+  }
+};
+
   return (
     <DatosContext.Provider value={{
       datosApp,
       setDatosApp,
       usuarioActivo,
       guardarCambios,
+      guardarEnServidor,
       iniciarSesion,
       cerrarSesion
     }}>
