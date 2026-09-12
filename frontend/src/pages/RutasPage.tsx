@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useDatos } from "../context/DatosContext";
+import { API } from "../config/api";
 import L from "leaflet";
 
 // ✅ ZONAS PARA RUTAS
 const ZONAS_RUTAS = ["CDMX", "MORELIA", "LEÓN", "FORÁNEO", "QUERÉTARO", "LOCAL"];
-
 // ✅ Coordenadas por defecto (centro de Querétaro)
 const GRUPO_SIERRA_QUERETARO: [number, number] = [20.639827, -100.496519];
 
 export default function RutasPage() {
-  const { usuarioActivo, datosApp, setDatosApp, guardarCambios, cerrarSesion } = useDatos();
+  // ✅ AGRESTA guardarEnServidor AQUÍ
+  const { usuarioActivo, datosApp, setDatosApp, cerrarSesion, guardarEnServidor } = useDatos();
   const lista = datosApp?.rutas || [];
   const operadores = datosApp?.operadores || [];
   const unidades = datosApp?.unidades || [];
@@ -62,11 +63,9 @@ export default function RutasPage() {
     if (modo !== "form" || !mapaListo) return;
     const mapa = (window as any)._mapaRuta;
     if (!mapa) return;
-
     mapa.eachLayer((capa: any) => {
       if (capa instanceof L.Marker || capa instanceof L.Polyline) mapa.removeLayer(capa);
     });
-
     const puntos: [number, number][] = [];
     form.ordenClientes.forEach((idCliente) => {
       const cliente = clientes.find((c: any) => c.id === idCliente);
@@ -84,7 +83,6 @@ export default function RutasPage() {
         }
       }
     });
-
     if (puntos.length > 0) {
       L.polyline(puntos, {
         color: 'red',
@@ -127,29 +125,46 @@ export default function RutasPage() {
     setForm(p => ({ ...p, ordenClientes: nuevaLista }));
   };
 
-  const guardar = () => {
+  // ✅ FUNCIÓN GUARDAR SIMPLIFICADA — USA LA FUNCIÓN ÚNICA
+  const guardar = async () => {
+    if (!datosApp) return;
     if (!form.nombre.trim() || !form.operadorId || !form.unidadId) {
       alert("⚠️ Completa Nombre, Operador y Unidad");
       return;
     }
+
     if (editandoId) {
-      setDatosApp({
-        ...datosApp,
-        rutas: lista.map((r: any) =>
-          r.id === editandoId ? { ...r, ...form, fechaCreacion: r.fechaCreacion } : r
-        )
+      // ✅ EDITAR — lógica se mantiene igual
+      const listaActualizada = lista.map((r: any) =>
+        r.id === editandoId ? { ...r, ...form, fechaCreacion: r.fechaCreacion } : r
+      );
+      const datosActualizados = {
+        usuarios: datosApp.usuarios,
+        operadores: datosApp.operadores,
+        unidades: datosApp.unidades,
+        clientes: datosApp.clientes,
+        rutas: listaActualizada,
+        entregas: datosApp.entregas,
+        combustible: datosApp.combustible,
+        ubicaciones: datosApp.ubicaciones
+      };
+      setDatosApp(datosActualizados);
+      await fetch(API + '/datos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosActualizados)
       });
+      alert("✅ Ruta actualizada correctamente");
     } else {
-      // ✅ ID CORREGIDO — número seguro para PostgreSQL
-      const nuevoId = Math.floor(Math.random() * 2000000000) + 2;
-      setDatosApp({
-        ...datosApp,
-        rutas: [...lista, { ...form, id: nuevoId, fechaCreacion: new Date().toLocaleDateString() } as any]
-      });
+      // ✅ CREAR NUEVA — USA LA FUNCIÓN ÚNICA + fechaCreacion
+      const rutaNueva = { 
+        ...form, 
+        fechaCreacion: new Date().toLocaleDateString() 
+      };
+      const resultado = await guardarEnServidor("rutas", rutaNueva);
+      if (resultado?.ok) alert("✅ Ruta guardada correctamente");
     }
-    guardarCambios();
     limpiar();
-    alert("✅ Ruta guardada correctamente");
   };
 
   const editar = (r: any) => {
@@ -165,10 +180,29 @@ export default function RutasPage() {
     setMapaListo(false);
   };
 
-  const eliminar = (id: number) => {
+  // ✅ ELIMINAR — lógica limpia
+  const eliminar = async (id: number) => {
     if (!confirm("¿Eliminar esta ruta?")) return;
-    setDatosApp({ ...datosApp, rutas: lista.filter((r: any) => r.id !== id) });
-    guardarCambios();
+    if (!datosApp) return;
+    
+    const listaActualizada = lista.filter((r: any) => r.id !== id);
+    const datosActualizados = {
+      usuarios: datosApp.usuarios,
+      operadores: datosApp.operadores,
+      unidades: datosApp.unidades,
+      clientes: datosApp.clientes,
+      rutas: listaActualizada,
+      entregas: datosApp.entregas,
+      combustible: datosApp.combustible,
+      ubicaciones: datosApp.ubicaciones
+    };
+    setDatosApp(datosActualizados);
+    await fetch(API + '/datos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datosActualizados)
+    });
+    alert("✅ Ruta eliminada");
   };
 
   return (
@@ -178,7 +212,6 @@ export default function RutasPage() {
         <img src="/logo.png" alt="Logotipo" className="mx-auto h-16 w-auto mb-2" />
         <h2 className="text-xl font-bold text-white">📍 Gestión de Rutas</h2>
       </div>
-
       {/* CONTENIDO PRINCIPAL */}
       <div className="max-w-4xl mx-auto bg-black/40 p-6 rounded-xl border border-red-500/30">
         {modo === "lista" ? (
@@ -211,7 +244,6 @@ export default function RutasPage() {
         ) : (
           <>
             <h3 className="font-bold text-white mb-4">{editandoId ? "✏️ Editar" : "➕ Nueva"} Ruta</h3>
-
             {/* 📋 DATOS DE LA RUTA */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
@@ -273,13 +305,11 @@ export default function RutasPage() {
                 </select>
               </div>
             </div>
-
             {/* 📍 CLIENTES EN ORDEN DE RECORRIDO */}
             <div className="mb-4">
               <label className="block text-sm text-gray-300 mb-2 font-bold">
                 📍 Orden de recorrido — {form.ordenClientes.length} clientes seleccionados
               </label>
-
               {form.ordenClientes.length > 0 && (
                 <div className="mb-3 p-3 bg-green-900/30 rounded-lg border border-green-500/30">
                   <p className="text-sm font-bold text-green-300 mb-2">✅ Orden actual de visita:</p>
@@ -300,7 +330,6 @@ export default function RutasPage() {
                   })}
                 </div>
               )}
-
               <div className="max-h-40 overflow-y-auto border border-white/20 rounded-lg p-3 bg-white/5">
                 {clientes.length === 0 ? (
                   <p className="text-gray-400">Primero registra clientes con su ubicación</p>
@@ -324,7 +353,6 @@ export default function RutasPage() {
                 )}
               </div>
             </div>
-
             {/* 🗺️ MAPA DE PREVISUALIZACIÓN */}
             <div className="mb-4">
               <label className="block text-sm text-amber-300 mb-2 font-bold">🗺️ Vista previa del recorrido</label>
@@ -337,7 +365,6 @@ export default function RutasPage() {
                 🔴 La línea roja muestra el recorrido en el orden establecido. Usa ↑↓ para cambiar el orden.
               </p>
             </div>
-
             {/* BOTONES */}
             <div className="flex gap-3 mt-4">
               <button onClick={limpiar} className="px-6 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white font-bold">Cancelar</button>
@@ -346,7 +373,6 @@ export default function RutasPage() {
           </>
         )}
       </div>
-
       {/* BOTONES INFERIORES */}
       <div className="text-center mt-8 space-x-4">
         <Link to="/dashboard" className="inline-block bg-gray-700/70 hover:bg-gray-600 px-6 py-3 rounded-lg text-white font-bold">
