@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useDatos } from "../context/DatosContext";
+import { API } from "../config/api";
 
 // ✅ LICENCIAS POR ESTADO
 const LICENCIAS: Record<string, string[]> = {
@@ -11,8 +12,10 @@ const LICENCIAS: Record<string, string[]> = {
 };
 
 export default function OperadoresPage() {
-  const { usuarioActivo, datosApp, setDatosApp, guardarCambios, cerrarSesion } = useDatos();
+  // ✅ AGRESTA guardarEnServidor AQUÍ
+  const { usuarioActivo, datosApp, setDatosApp, cerrarSesion, guardarEnServidor } = useDatos();
   const lista = datosApp?.operadores || [];
+  
   const [form, setForm] = useState({ 
     nombre: "", 
     licenciaTipo: "QUERETARO", 
@@ -35,25 +38,37 @@ export default function OperadoresPage() {
     setEditId(null);
   };
 
-  const guardar = () => {
+  // ✅ FUNCIÓN GUARDAR SIMPLIFICADA — USA LA FUNCIÓN ÚNICA
+  const guardar = async () => {
+    if (!datosApp) return;
     if (!form.nombre.trim()) return alert("⚠️ Escribe el nombre");
     
     if (editId) {
-      setDatosApp({
-        ...datosApp,
-        operadores: lista.map(o => o.id === editId ? { ...o, ...form } : o)
+      // ✅ EDITAR — lógica se mantiene igual
+      const listaActualizada = lista.map(o => o.id === editId ? { ...o, ...form } as any : o);
+      const datosActualizados = {
+        usuarios: datosApp.usuarios,
+        operadores: listaActualizada,
+        unidades: datosApp.unidades,
+        clientes: datosApp.clientes,
+        rutas: datosApp.rutas,
+        entregas: datosApp.entregas,
+        combustible: datosApp.combustible,
+        ubicaciones: datosApp.ubicaciones
+      };
+      setDatosApp(datosActualizados);
+      await fetch(API + '/datos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosActualizados)
       });
+      alert("✅ Operador actualizado");
     } else {
-      // ✅ ID CORREGIDO → número pequeño para PostgreSQL
-      const nuevoId = Math.floor(Math.random() * 2000000000) + 2;
-      setDatosApp({ 
-        ...datosApp, 
-        operadores: [...lista, { id: nuevoId, ...form } as any] 
-      });
+      // ✅ CREAR NUEVO — USA LA FUNCIÓN ÚNICA (SIN ID, EL SERVIDOR LO ASIGNA)
+      const resultado = await guardarEnServidor("operadores", { ...form });
+      if (resultado?.ok) alert("✅ Operador guardado");
     }
-    guardarCambios();
     limpiar();
-    alert("✅ Operador guardado");
   };
 
   const editar = (o: any) => {
@@ -67,10 +82,29 @@ export default function OperadoresPage() {
     });
   };
 
-  const eliminar = (id: number) => {
+  // ✅ ELIMINAR — lógica limpia
+  const eliminar = async (id: number) => {
     if (!confirm("¿Eliminar este operador?")) return;
-    setDatosApp({ ...datosApp, operadores: lista.filter(o => o.id !== id) });
-    guardarCambios();
+    if (!datosApp) return;
+    
+    const listaActualizada = lista.filter(o => o.id !== id);
+    const datosActualizados = {
+      usuarios: datosApp.usuarios,
+      operadores: listaActualizada,
+      unidades: datosApp.unidades,
+      clientes: datosApp.clientes,
+      rutas: datosApp.rutas,
+      entregas: datosApp.entregas,
+      combustible: datosApp.combustible,
+      ubicaciones: datosApp.ubicaciones
+    };
+    setDatosApp(datosActualizados);
+    await fetch(API + '/datos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datosActualizados)
+    });
+    alert("✅ Operador eliminado");
   };
 
   const clasesDisponibles = LICENCIAS[form.licenciaTipo] || [];
