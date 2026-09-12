@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useDatos } from "../context/DatosContext";
+import { API } from "../config/api";
 
 export default function UnidadesPage() {
-  const { usuarioActivo, datosApp, setDatosApp, guardarCambios, cerrarSesion } = useDatos();
+  // ✅ AGRESTA guardarEnServidor AQUÍ
+  const { usuarioActivo, datosApp, setDatosApp, cerrarSesion, guardarEnServidor } = useDatos();
   const lista = datosApp?.unidades || [];
   const [form, setForm] = useState({ placa: "", marca: "", modelo: "", capacidad: "" });
   const [editId, setEditId] = useState<number | null>(null);
@@ -15,20 +17,40 @@ export default function UnidadesPage() {
     setEditId(null);
   };
 
-  const guardar = () => {
-    if (!form.placa.trim() || !form.modelo.trim()) return alert("⚠️ Placa y Modelo son obligatorios");
+  // ✅ FUNCIÓN GUARDAR SIMPLIFICADA — USA LA FUNCIÓN ÚNICA
+  const guardar = async () => {
+    if (!datosApp) return;
+    if (!form.placa.trim() || !form.modelo.trim()) 
+      return alert("⚠️ Placa y Modelo son obligatorios");
+
     if (editId) {
-      setDatosApp({
-        ...datosApp,
-        unidades: lista.map((u: any) => u.id === editId ? { ...u, ...form } : u)
+      // ✅ EDITAR — lógica se mantiene igual
+      const listaActualizada = lista.map((u: any) => 
+        u.id === editId ? { ...u, ...form } : u
+      );
+      const datosActualizados = {
+        usuarios: datosApp.usuarios,
+        operadores: datosApp.operadores,
+        unidades: listaActualizada,
+        clientes: datosApp.clientes,
+        rutas: datosApp.rutas,
+        entregas: datosApp.entregas,
+        combustible: datosApp.combustible,
+        ubicaciones: datosApp.ubicaciones
+      };
+      setDatosApp(datosActualizados);
+      await fetch(API + '/datos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosActualizados)
       });
+      alert("✅ Unidad actualizada");
     } else {
-      // ✅ ID compatible con PostgreSQL
-      setDatosApp({ ...datosApp, unidades: [...lista, { id: Date.now(), ...form }] });
+      // ✅ CREAR NUEVA — EL SERVIDOR ASIGNA EL ID AUTOMÁTICAMENTE
+      const resultado = await guardarEnServidor("unidades", form);
+      if (resultado?.ok) alert("✅ Unidad guardada");
     }
-    guardarCambios();
     limpiar();
-    alert("✅ Unidad guardada");
   };
 
   const editar = (u: any) => {
@@ -36,10 +58,29 @@ export default function UnidadesPage() {
     setForm({ placa: u.placa, marca: u.marca, modelo: u.modelo, capacidad: u.capacidad });
   };
 
-  const eliminar = (id: number) => {
+  // ✅ ELIMINAR — lógica limpia
+  const eliminar = async (id: number) => {
     if (!confirm("¿Eliminar esta unidad?")) return;
-    setDatosApp({ ...datosApp, unidades: lista.filter((u: any) => u.id !== id) });
-    guardarCambios();
+    if (!datosApp) return;
+    
+    const listaActualizada = lista.filter((u: any) => u.id !== id);
+    const datosActualizados = {
+      usuarios: datosApp.usuarios,
+      operadores: datosApp.operadores,
+      unidades: listaActualizada,
+      clientes: datosApp.clientes,
+      rutas: datosApp.rutas,
+      entregas: datosApp.entregas,
+      combustible: datosApp.combustible,
+      ubicaciones: datosApp.ubicaciones
+    };
+    setDatosApp(datosActualizados);
+    await fetch(API + '/datos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datosActualizados)
+    });
+    alert("✅ Unidad eliminada");
   };
 
   return (
