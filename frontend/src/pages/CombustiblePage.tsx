@@ -1,42 +1,41 @@
 import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useDatos } from "../context/DatosContext";
-
+import { API } from "../config/api";
 
 export default function CombustiblePage() {
-  const { usuarioActivo, datosApp, setDatosApp, guardarCambios, cerrarSesion } = useDatos();
+  // ✅ AGRESTA guardarEnServidor AQUÍ
+  const { usuarioActivo, datosApp, setDatosApp, cerrarSesion, guardarEnServidor } = useDatos();
   const lista = datosApp?.combustible || [];
+  
   const [form, setForm] = useState({ 
     fecha: "", unidadId: "", kmInicial: "", kmFinal: "", 
     litros: "", importe: "", rendimiento: "", registradoPor: "" 
   });
 
-
   if (!usuarioActivo) return <Navigate to="/" replace />;
 
-
-  const guardar = () => {
+  const guardar = async () => {
+    if (!datosApp) return;
     if (!form.fecha || !form.litros || !form.importe) 
       return alert("⚠️ Fecha, Litros e Importe son obligatorios");
-    
-    const nuevo = {
-  id: Math.floor(Math.random() * 2000000000) + 2,
-  ...form,
-  fechaHora: new Date().toLocaleString()
-};
-    
-    setDatosApp({ 
-      ...datosApp, 
-      combustible: [...lista, nuevo] as any  // ✅ Agregado "as any"
-    });
-    guardarCambios();
-    setForm({ 
-      fecha: "", unidadId: "", kmInicial: "", kmFinal: "", 
-      litros: "", importe: "", rendimiento: "", registradoPor: "" 
-    });
-    alert("✅ Registro guardado");
-  };
 
+    const nuevo = {
+      ...form,
+      fechaHora: new Date().toLocaleString()
+    };
+
+    // ✅ USAMOS LA FUNCIÓN ÚNICA — SIN ROJOS, SIN COMPLICACIONES
+    const resultado = await guardarEnServidor("combustible", nuevo);
+    
+    if (resultado?.ok) {
+      alert("✅ Registro guardado");
+      setForm({ 
+        fecha: "", unidadId: "", kmInicial: "", kmFinal: "", 
+        litros: "", importe: "", rendimiento: "", registradoPor: "" 
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black to-red-950 text-white p-6">
@@ -44,8 +43,6 @@ export default function CombustiblePage() {
         <img src="/logo.png" alt="Logotipo" className="mx-auto h-24 w-auto object-contain mb-2" />
         <h2 className="text-xl font-bold text-red-200">⛽ Registro de Combustible</h2>
       </div>
-
-
       <div className="max-w-4xl mx-auto bg-black/40 p-6 rounded-xl border border-red-500/30">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
@@ -89,11 +86,7 @@ export default function CombustiblePage() {
               className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white" placeholder="Tu nombre" />
           </div>
         </div>
-
-
         <button onClick={guardar} className="w-full py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold mb-6">✅ Guardar Registro</button>
-
-
         <h3 className="font-bold text-lg mb-3">Historial ({lista.length} registros)</h3>
         <div className="space-y-2 max-h-80 overflow-y-auto">
           {lista.slice().reverse().map((r: any) => (
@@ -104,8 +97,6 @@ export default function CombustiblePage() {
           ))}
         </div>
       </div>
-
-
       <div className="text-center mt-8 space-x-4">
         <Link to="/dashboard" className="inline-block bg-gray-700/70 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold">← Volver al Menú</Link>
         <button onClick={cerrarSesion} className="bg-red-800/70 hover:bg-red-700 px-6 py-3 rounded-lg font-bold">🚪 Cerrar Sesión</button>
