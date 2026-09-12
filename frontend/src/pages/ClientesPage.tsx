@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useDatos } from "../context/DatosContext";
+import { API } from "../config/api";  // ✅ AGRESTA ESTA LÍNEA
 
 export default function ClientesPage() {
-  const { usuarioActivo, datosApp, setDatosApp, guardarCambios, cerrarSesion } = useDatos();
+  // ✅ AGRESTA guardarEnServidor AQUÍ
+  const { usuarioActivo, datosApp, setDatosApp, cerrarSesion, guardarEnServidor } = useDatos();
   const lista = datosApp?.clientes || [];
   const [modoCoord, setModoCoord] = useState<'gps' | 'manual'>('gps');
   
-  // ✅ CORREGIDO: Faltaba "setForm] ="
   const [form, setForm] = useState({ 
     nombre: "", 
     direccion: "", 
@@ -16,9 +17,8 @@ export default function ClientesPage() {
     longitud: "" 
   });
   const [editId, setEditId] = useState<number | null>(null);
-
   if (!usuarioActivo) return <Navigate to="/" replace />;
-
+  
   const obtenerUbicacion = () => {
     if (!navigator.geolocation) {
       alert("⚠️ Tu dispositivo no tiene GPS o no lo permite");
@@ -45,33 +45,46 @@ export default function ClientesPage() {
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
-
+  
   const limpiar = () => {
     setForm({ nombre: "", direccion: "", telefono: "", latitud: "", longitud: "" });
     setEditId(null);
   };
 
-  const guardar = () => {
+  // ✅ FUNCIÓN GUARDAR SIMPLIFICADA — USA LA FUNCIÓN ÚNICA
+  const guardar = async () => {
+    if (!datosApp) return;
     if (!form.nombre.trim()) return alert("⚠️ Escribe el nombre del cliente");
     if (!form.latitud || !form.longitud) return alert("⚠️ Obtén o escribe las coordenadas");
-    
-    if (editId) {
-      setDatosApp({
-        ...datosApp,
-        clientes: lista.map(c => c.id === editId ? { ...c, ...form } as any : c)
-      });
-    } else {
-      const nuevoId = Math.floor(Math.random() * 2000000000) + 2;
-      setDatosApp({ 
-        ...datosApp, 
-        clientes: [...lista, { id: nuevoId, ...form } as any] 
-      });
-    }
-    guardarCambios();
-    limpiar();
-    alert("✅ Cliente guardado");
-  };
 
+    if (editId) {
+      // ✅ EDITAR — lógica se mantiene igual
+      const listaActualizada = lista.map(c => c.id === editId ? { ...c, ...form } as any : c);
+      const datosActualizados = {
+        usuarios: datosApp.usuarios,
+        operadores: datosApp.operadores,
+        unidades: datosApp.unidades,
+        clientes: listaActualizada,
+        rutas: datosApp.rutas,
+        entregas: datosApp.entregas,
+        combustible: datosApp.combustible,
+        ubicaciones: datosApp.ubicaciones
+      };
+      setDatosApp(datosActualizados);
+      await fetch(API + '/datos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosActualizados)
+      });
+      alert("✅ Cliente actualizado");
+    } else {
+      // ✅ CREAR NUEVO — USAMOS LA FUNCIÓN ÚNICA
+      const resultado = await guardarEnServidor("clientes", { ...form });
+      if (resultado?.ok) alert("✅ Cliente guardado");
+    }
+    limpiar();
+  };
+  
   const editar = (c: any) => {
     setEditId(c.id);
     setForm({ 
@@ -83,11 +96,30 @@ export default function ClientesPage() {
     });
   };
 
-  const eliminar = (id: number) => {
-    if (!confirm("¿Eliminar este cliente?")) return;
-    setDatosApp({ ...datosApp, clientes: lista.filter(c => c.id !== id) });
-    guardarCambios();
+  // ✅ ELIMINAR — también se mantiene igual pero limpio
+  const eliminar = async (id: number) => {
+  if (!confirm("¿Eliminar este cliente?")) return;
+  if (!datosApp) return;  // ✅ YA LA TIENES, PERO ASEGÚRALA
+
+  const listaActualizada = lista.filter(c => c.id !== id);
+  const datosActualizados = {
+    usuarios: datosApp.usuarios,
+    operadores: datosApp.operadores,
+    unidades: datosApp.unidades,
+    clientes: listaActualizada,
+    rutas: datosApp.rutas,
+    entregas: datosApp.entregas,
+    combustible: datosApp.combustible,
+    ubicaciones: datosApp.ubicaciones
   };
+  setDatosApp(datosActualizados);
+  await fetch(API + '/datos', {  // ✅ YA TIENES API IMPORTADO → SIN ROJO
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(datosActualizados)
+  });
+  alert("✅ Cliente eliminado");
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black to-red-950 text-white p-6">
